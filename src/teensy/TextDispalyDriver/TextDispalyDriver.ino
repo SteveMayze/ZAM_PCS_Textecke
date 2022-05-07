@@ -1,0 +1,114 @@
+/*
+  Arctix Text Display Driver
+
+  A ZAM PCS Project
+*/
+
+#include "Keyboard.h"
+
+// #define TEST_MODE
+
+
+// Define some modes of opperation. Two at the moment, 
+// but perhaps there could be more.
+#define MODE_IDLE 0
+#define MODE_TEXT_ENTRY 1
+
+#define LED 13
+#define SYNC 2
+
+
+byte operation_mode = MODE_IDLE;
+
+void press_key(byte key){
+    Keyboard.press(key);
+    delay(500);
+    Keyboard.release(key);  
+}
+
+void prepare_display_for_text_entry(){
+  #ifndef TEST_MODE
+    press_key(KEY_ESC);
+    delay(1000);
+    press_key('1');
+  #else
+    Keyboard.println("ESC 1 - Enter text entry mode");
+  #endif
+}
+
+void exit_text_entry_mode() {
+  #ifndef TEST_MODE
+    press_key(KEY_RETURN);
+  #else
+    Keyboard.println("RETURN - exit text entry mode");
+  #endif
+  
+}
+void clear_display_buffer() {
+  #ifndef TEST_MODE
+    // 
+    // press and hold CTRL
+    Keyboard.press(KEY_LEFT_CTRL);
+    Keyboard.press(KEY_LEFT_ALT);
+    Keyboard.press(KEY_DELETE);
+    delay(500);
+    // release all the keys at the same instant
+    Keyboard.releaseAll();
+    delay(500);
+  #else
+    Keyboard.println("ALT CTRL DELETE - Clear the buffer");
+ #endif
+  
+}
+
+
+
+void setup() {
+
+  pinMode(LED, OUTPUT);
+  pinMode(SYNC, INPUT_PULLUP);
+  digitalWrite(LED, LOW);
+  
+  // open the serial port:
+  Serial2.begin(9600);
+  operation_mode = MODE_IDLE;
+  delay(10000);
+  Keyboard.press(KEY_ESC);
+  delay(1000);
+  Keyboard.releaseAll();
+ 
+}
+
+void loop() {
+  // Check the SYNCH button. This puts the Text Display Driver into
+  // the same mode as the Text Display Unit.
+  if ( digitalRead(SYNCH) == LOW ){
+    operation_mode = MODE_IDLE;
+  }
+  // Check for any characters from the host
+  while (Serial2.available () > 0)
+  {
+      byte rxByte = Serial2.read();
+
+      // Enter was pressed. Depending on the current mode, either
+      // change into text entry mode or go back into idle mode.
+      if( rxByte == '\r' ) {
+        if(operation_mode == MODE_IDLE) {
+          prepare_display_for_text_entry();
+          clear_display_buffer();
+          operation_mode = MODE_TEXT_ENTRY;
+          digitalWrite(LED, HIGH);
+        } else {
+          // Complete the message
+          exit_text_entry_mode();
+          operation_mode = MODE_IDLE;
+          digitalWrite(LED, LOW);
+        }
+      } else {
+        if( operation_mode == MODE_TEXT_ENTRY){
+          Keyboard.write(rxByte);
+        }
+      }
+      delay(10);
+  }
+}
