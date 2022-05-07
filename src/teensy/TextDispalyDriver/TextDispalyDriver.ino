@@ -20,7 +20,7 @@
 
 byte operation_mode = MODE_IDLE;
 
-void press_key(byte key){
+void press_key(uint8_t key){
     Keyboard.press(key);
     delay(500);
     Keyboard.release(key);  
@@ -28,7 +28,7 @@ void press_key(byte key){
 
 void prepare_display_for_text_entry(){
   #ifndef TEST_MODE
-    press_key(KEY_ESC);
+    press_key((uint8_t)KEY_ESC);
     delay(1000);
     press_key('1');
   #else
@@ -38,7 +38,7 @@ void prepare_display_for_text_entry(){
 
 void exit_text_entry_mode() {
   #ifndef TEST_MODE
-    press_key(KEY_RETURN);
+    press_key((uint8_t)KEY_RETURN);
   #else
     Keyboard.println("RETURN - exit text entry mode");
   #endif
@@ -82,13 +82,13 @@ void setup() {
 void loop() {
   // Check the SYNCH button. This puts the Text Display Driver into
   // the same mode as the Text Display Unit.
-  if ( digitalRead(SYNCH) == LOW ){
+  if ( digitalRead(SYNC) == LOW ){
     operation_mode = MODE_IDLE;
   }
   // Check for any characters from the host
   while (Serial2.available () > 0)
   {
-      byte rxByte = Serial2.read();
+      uint8_t rxByte = Serial2.read();
 
       // Enter was pressed. Depending on the current mode, either
       // change into text entry mode or go back into idle mode.
