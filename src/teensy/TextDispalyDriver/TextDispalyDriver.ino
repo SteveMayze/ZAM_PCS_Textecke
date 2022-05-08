@@ -29,7 +29,7 @@ void press_key(uint8_t key){
 void prepare_display_for_text_entry(){
   #ifndef TEST_MODE
     press_key((uint8_t)KEY_ESC);
-    delay(1000);
+    delay(100);
     press_key('1');
   #else
     Keyboard.println("ESC 1 - Enter text entry mode");
@@ -51,10 +51,9 @@ void clear_display_buffer() {
     Keyboard.press(KEY_LEFT_CTRL);
     Keyboard.press(KEY_LEFT_ALT);
     Keyboard.press(KEY_DELETE);
-    delay(500);
+    delay(100);
     // release all the keys at the same instant
     Keyboard.releaseAll();
-    delay(500);
   #else
     Keyboard.println("ALT CTRL DELETE - Clear the buffer");
  #endif
@@ -72,9 +71,9 @@ void setup() {
   // open the serial port:
   Serial2.begin(9600);
   operation_mode = MODE_IDLE;
-  delay(10000);
+  delay(500);
   Keyboard.press(KEY_ESC);
-  delay(1000);
+  delay(500);
   Keyboard.releaseAll();
  
 }
@@ -84,6 +83,7 @@ void loop() {
   // the same mode as the Text Display Unit.
   if ( digitalRead(SYNC) == LOW ){
     operation_mode = MODE_IDLE;
+    digitalWrite(LED, LOW);
   }
   // Check for any characters from the host
   while (Serial2.available () > 0)
