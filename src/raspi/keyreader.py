@@ -11,7 +11,8 @@ try:
         if ord(ch) < 32:
             disp_ch = ascii[ord(ch)]
         elif ord(ch) == 0x7F:
-            disp_ch = "DEL"
+            disp_ch = "DEL (BS)"
+            ch = "\x08"
         else:
             disp_ch = ch
             
