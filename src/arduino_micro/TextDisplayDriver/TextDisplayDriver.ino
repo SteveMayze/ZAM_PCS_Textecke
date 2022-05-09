@@ -4,7 +4,7 @@
   A ZAM PCS Project
 */
 
-#include "Keyboard.h"
+#include "ZKeyboard.h"
 
 // #define TEST_MODE
 
@@ -31,7 +31,7 @@ void prepare_display_for_text_entry(){
 //    Keyboard.println("ESC 1 - Enter text entry mode");
 //  #else
     press_key((uint8_t)KEY_ESC);
-    delay(100);
+    delay(500);
     press_key('1');
 //  #endif
 }
@@ -53,7 +53,7 @@ void clear_display_buffer() {
     Keyboard.press(KEY_LEFT_CTRL);
     Keyboard.press(KEY_LEFT_ALT);
     Keyboard.press(KEY_DELETE);
-    delay(100);
+    delay(500);
     // release all the keys at the same instant
     Keyboard.releaseAll();
 // #endif
