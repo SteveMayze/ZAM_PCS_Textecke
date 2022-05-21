@@ -6,7 +6,11 @@ import logging
 logger = None
 
 class MessageWindow(object):
+    
+    ref = None
+    
     def __init__(self,master):
+        ref = master
         root_x = master.winfo_rootx()
         root_y = master.winfo_rooty()
         root_width = master.winfo_width()
@@ -18,7 +22,7 @@ class MessageWindow(object):
         top = self.top = tk.Toplevel(master)
         top.geometry(f'{win_width}x150+{win_x}+{win_y}')
 
-        self.l = tk.Label(top,text="Bitte teilen uns ein Nachrict")
+        self.l = tk.Label(top,text="Teile dich doch mit")
         self.l.config(font=("Helvetica", 32))
         self.l.pack()
         self.e = tk.Entry(top, width=400, font=('Helvetica 24'))
@@ -34,7 +38,7 @@ class MessageWindow(object):
 class App( tk.Frame ):
    
     canvas = None
-    text_message = 'ZAM Post CORONA Stadt (PCS) Projekt Nr. 41. Textecke'
+    text_message = 'ZAM Post CORONA Stadt (PCS) Projekt 41 - Textecke'
     text_id = None
     
     def close_and_end(self, event):
@@ -44,6 +48,7 @@ class App( tk.Frame ):
     def request_message(self, event):
         self.w = MessageWindow(self.master)
         self.master.wait_window(self.w.top)
+        self.master.focus_set()
         if self.w.value:
             logging.info(f'{self.w.value}')
             self.text_message = self.w.value
@@ -51,6 +56,8 @@ class App( tk.Frame ):
         else:
             logging.info('empty message')
             print('An empty message')
+            
+            
     def shift(self):
         x1,y1,x2,y2 = self.canvas.bbox("marquee")
         if( x2<0 or y1<0 ): #reset the coordinates
@@ -90,7 +97,7 @@ class App( tk.Frame ):
 
 
 def main():
-    logging.basicConfig(filename='marquee.log', encoding='utf-8', level=logging.DEBUG, format='%(asctime)s %(message)s')
+    logging.basicConfig(filename='marquee.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
     logger = logging.getLogger('ZAM_marquee')
     root = tk.Tk()
     root.attributes('-fullscreen', True)
