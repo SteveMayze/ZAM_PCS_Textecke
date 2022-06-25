@@ -7,7 +7,11 @@ import pyautogui
 logger = None
 
 class MessageWindow(object):
+    
+    ref = None
+    
     def __init__(self,master):
+        ref = master
         root_x = master.winfo_rootx()
         root_y = master.winfo_rooty()
         root_width = master.winfo_width()
@@ -36,7 +40,7 @@ class MessageWindow(object):
 class App( tk.Frame ):
    
     canvas = None
-    text_message = 'ZAM Post CORONA Stadt (PCS) Projekt Nr. 41. Textecke'
+    text_message = 'ZAM Post CORONA Stadt (PCS) Projekt 41 - Textecke'
     text_id = None
     
     def close_and_end(self, event):
@@ -46,6 +50,7 @@ class App( tk.Frame ):
     def request_message(self, event):
         self.w = MessageWindow(self.master)
         self.master.wait_window(self.w.top)
+        self.master.focus_set()
         if self.w.value:
             logging.info(f'{self.w.value}')
             self.text_message = self.w.value
@@ -53,7 +58,8 @@ class App( tk.Frame ):
         else:
             logging.info('empty message')
             print('An empty message')
-            self.canvas.itemconfig(self.text_id, text=self.text_message)
+            
+            
     def shift(self):
         x1,y1,x2,y2 = self.canvas.bbox("marquee")
         if( x2<0 or y1<0 ): #reset the coordinates
