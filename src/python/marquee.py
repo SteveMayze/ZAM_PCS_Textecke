@@ -3,8 +3,12 @@
 import tkinter as tk
 import logging
 import pyautogui
+import json
+import requests
 
 logger = None
+
+rest_url = "http://192.168.178.35/"
 
 class MessageWindow(object):
     
@@ -55,6 +59,20 @@ class App( tk.Frame ):
             logging.info(f'{self.w.value}')
             self.text_message = self.w.value
             self.canvas.itemconfig(self.text_id, text=self.text_message)
+            print(f"Message to send: {self.text_message}")
+            # payload = json.dumps({"action":"message", "param":self.text_message}, separators=(',',':'))
+            payload = {"action":"message","param":self.text_message}
+            headers = {"Content-Type":"application/json",
+                       "Accept-Encoding":"gzip, deflate, br",
+                       "Accept": "*/*"
+                       }
+            
+            print(f"payload: {payload}")
+            
+            response = requests.post(rest_url, headers=headers,
+                                        data=payload,
+                                        timeout=30)
+            print(response.text)
         else:
             logging.info('empty message')
             print('An empty message')
