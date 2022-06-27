@@ -12,7 +12,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\"action\":\"message\",\"param\":\"Sunday too far away\"}",
+					"raw": "{\r\n    \"action\":\"message\",\r\n    \"param\":\"One flew there and back \"\r\n}\r\n",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -36,13 +36,73 @@
 			"response": []
 		},
 		{
-			"name": "Colour blue",
+			"name": "Colour Red",
 			"request": {
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\"action\":\"colour\",\"param\":\"blue\"}",
+					"raw": "{\"action\":\"colour\",\"param\":\"red\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://192.168.178.35/",
+					"protocol": "http",
+					"host": [
+						"192",
+						"168",
+						"178",
+						"35"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Colour Orange",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"action\":\"colour\",\"param\":\"orange\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://192.168.178.35/",
+					"protocol": "http",
+					"host": [
+						"192",
+						"168",
+						"178",
+						"35"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Colour Yellow",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"action\":\"colour\",\"param\":\"yellow\"}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -96,13 +156,73 @@
 			"response": []
 		},
 		{
-			"name": "Colour Red",
+			"name": "Colour blue",
 			"request": {
 				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",
 					"raw": "{\"action\":\"colour\",\"param\":\"blue\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://192.168.178.35/",
+					"protocol": "http",
+					"host": [
+						"192",
+						"168",
+						"178",
+						"35"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Colour Indigo",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"action\":\"colour\",\"param\":\"indigo\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://192.168.178.35/",
+					"protocol": "http",
+					"host": [
+						"192",
+						"168",
+						"178",
+						"35"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Colour Violet",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"action\":\"colour\",\"param\":\"violet\"}",
 					"options": {
 						"raw": {
 							"language": "json"

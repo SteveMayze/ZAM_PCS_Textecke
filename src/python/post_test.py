@@ -1,6 +1,5 @@
 import json
 import requests
-import time
 
 text_message="Hello I am calling"
 rest_url = "http://192.168.178.35/"

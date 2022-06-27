@@ -10,6 +10,7 @@ except:
 import uos, machine, sys
 from machine import Pin
 from machine import UART
+import time
 
 #uos.dupterm(None, 1) # disable REPL on UART(0)
 import gc

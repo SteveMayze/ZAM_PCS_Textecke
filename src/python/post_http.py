@@ -9,6 +9,6 @@ headers = {"Content-Type":"application/json"}
 
 conn.request("POST", "/", payload, headers)
 
-data = res.read()
+data = conn.read()
 
 print(data.decode("utf-8"))

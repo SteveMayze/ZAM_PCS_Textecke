@@ -56,20 +56,18 @@ class App( tk.Frame ):
         self.master.wait_window(self.w.top)
         self.master.focus_set()
         if self.w.value:
-            s = requests.Session()
             logging.info(f'{self.w.value}')
             self.text_message = self.w.value
             self.canvas.itemconfig(self.text_id, text=self.text_message)
             print(f"Message to send: {self.text_message}")
             # payload = json.dumps({"action":"message", "param":self.text_message}, separators=(',',':'))
             payload = {"action":"message","param":self.text_message}
-            headers = {"Accept-Encoding":"gzip, deflate, br",
-                       "Connection":"keep-alive"
-                       "Accept": "*/*"
+            headers = {"Connection":"keep-alive",
+                       "Accept":"*/*"
                        }
             
             print(f"payload: {payload}")
-            
+            s = requests.Session()            
             response = s.post(rest_url, headers=headers, json=payload, timeout=30)
             print(response.text)
         else:

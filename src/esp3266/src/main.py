@@ -49,14 +49,37 @@ while True:
   print('Waiting for a connection')
   conn, addr = s.accept()
   print('Got a connection from %s' % str(addr))
+  time.sleep(1)
   request = conn.recv(1024)
   request = str(request)
   print('Content = %s' % request)
 
-  bodyIdx = request.find('\\r\\n\\r\\n') + 8
-  body = request[bodyIdx:-1]
+  ## bodyIdx = request.find('\\r\\n\\r\\n') + 8
+  ## body = request[bodyIdx:-1]
+  request_array = request.split('\\r\\n')
+  ## print('Request array %s' % request_array)
+  bodyIdx = 0
+  for ll in request_array:
+    print("%d - %s" % (bodyIdx, ll))
+    bodyIdx += 1
+    if ll == '':
+      break;
+  print('Body start line %d' % bodyIdx)
+  body_array = request_array[bodyIdx-1:]
+  body = ''
+  for bb in body_array:
+    body += bb
+  body = body[:-1]
+  print('located body: %s ' % body)
 
-  print('body: %s ' % body)
+  if body == None or body == '':
+    response = 'error - The body is empty'
+    conn.send('HTTP/1.1 405 OK\n')
+    conn.send('Content-Type: text/plain\n')
+    conn.send('Connection: close\n\n')
+    conn.sendall(response)
+    conn.close()
+    continue
 
   jbody = json.loads(body)
   action = jbody['action']
@@ -91,17 +114,17 @@ while True:
     if colour == 'red':
       frame.append(0x01)
     elif colour == 'orange':
-      frame.append(0x01)
-    elif colour == 'yellow':
-      frame.append(0x01)
-    elif colour == 'green':
       frame.append(0x02)
+    elif colour == 'yellow':
+      frame.append(0x03)
+    elif colour == 'green':
+      frame.append(0x04)
     elif colour == 'blue':
-      frame.append(0x03)
+      frame.append(0x05)
     elif colour == 'indigo':
-      frame.append(0x03)
-    elif colour == 'violate':
-      frame.append(0x03)
+      frame.append(0x06)
+    elif colour == 'violet':
+      frame.append(0x07)
     else:
       frame.append(0x01)
 
@@ -131,7 +154,6 @@ while True:
     else:
       frame.append(0x7F)
     
-
     chksum = 0
     for bb in frame[2:]:
       chksum += bb
