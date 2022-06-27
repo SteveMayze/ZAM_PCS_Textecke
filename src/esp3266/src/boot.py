@@ -7,7 +7,7 @@ try:
 except:
     import socket
 
-import uos, machine, sys
+import machine, sys
 from machine import Pin
 from machine import UART
 import time
