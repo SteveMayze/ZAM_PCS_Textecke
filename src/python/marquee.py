@@ -62,9 +62,7 @@ class App( tk.Frame ):
             print(f"Message to send: {self.text_message}")
             # payload = json.dumps({"action":"message", "param":self.text_message}, separators=(',',':'))
             payload = {"action":"message","param":self.text_message}
-            headers = {"Connection":"keep-alive",
-                       "Accept":"*/*"
-                       }
+            headers = {"Connection":"keep-alive", "Accept":"*/*" }
             
             print(f"payload: {payload}")
             s = requests.Session()            
