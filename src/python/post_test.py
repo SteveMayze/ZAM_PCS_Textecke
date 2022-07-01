@@ -2,7 +2,7 @@ import json
 import requests
 
 text_message="Hello I am calling"
-rest_url = "http://192.168.178.35/"
+rest_url = "http://192.168.178.34/"
 
 print(f"Message to send: {text_message}")
 payload = {"action": "message", "param": text_message}

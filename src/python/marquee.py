@@ -8,7 +8,7 @@ import requests
 
 logger = None
 
-rest_url = "http://192.168.178.35/"
+rest_url = "http://192.168.178.34/"
 
 class MessageWindow(object):
     
