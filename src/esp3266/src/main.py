@@ -119,8 +119,14 @@ while True:
     send_error_response(conn, response)
     conn.close()
     continue
+  try:
+    jbody = json.loads(body)
+  except:
+    response = 'Error The body can not be parsed %s' % body
+    send_error_response(conn, response)
+    conn.close()
+    continue
 
-  jbody = json.loads(body)
   action = jbody['action']
   if action == 'message':
     text = jbody['param']
@@ -205,3 +211,5 @@ while True:
     send_error_response(conn, response)
 
   conn.close()
+
+

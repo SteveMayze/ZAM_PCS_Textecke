@@ -1,11 +1,14 @@
 # This file is executed on every boot (including wake-boot from deepsleep)
 #import esp
 #esp.osdebug(None)
+import os
 
 try:
-    import usocket as socket
-except:
+    print('Trying usocket')
     import socket
+except:
+    print('socket failed, using usocket')
+    import usocket as socket
 
 import machine, sys
 from machine import Pin
@@ -14,11 +17,11 @@ import time
 
 #uos.dupterm(None, 1) # disable REPL on UART(0)
 import gc
-import webrepl
+# import webrepl
 import network
 import json
 
-webrepl.start()
+## webrepl.start()
 gc.collect()
 
 ESSID = "WN0463FB2"
@@ -37,3 +40,5 @@ def connect():
 connect()
 
 led = Pin(2, Pin.OUT)
+
+
