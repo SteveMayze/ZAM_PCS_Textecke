@@ -52,6 +52,16 @@ String send_response(){
   return ptr;
 }
 
+uint8_t calc_checksum(uint8_t message[], uint8_t length){
+  uint8_t checksum = 0;
+  for (uint8_t i = 0; i < length; i++){
+      checksum += message[i];
+  }
+  checksum &= 0xFF;
+  checksum =  0xFF - checksum;
+  Serial.printf("check-sum: %02X\n", checksum);
+  return checksum;
+}
 
 void handle_request() {
 
@@ -82,44 +92,40 @@ void handle_request() {
     uint8_t frame_length = 0;
     message_frame[frame_idx++] = FRAME_DELIMITER;
     if (action.compare("message") == 0){
-      Serial.println("Setting up the datagram");
-      frame_length = param.length()+1;
+      frame_length = param.length() + 1;  // The length of the message + the action, one byte.
       message_frame[frame_idx++] = frame_length;
       Serial.printf("Setting up the datagram. Data length: %02X\n", frame_length);
       message_frame[frame_idx++] = ACTION_MESSAGE;
       for(uint8_t i = 0; i<  param.length();i++){
         message_frame[frame_idx++] = param[i];
       }
-      // message_frame[frame_idx++] = 0x00; 
-      uint8_t checksum = 0;
-      for (uint8_t i = 2; i < frame_length+2 ; i++){
-          checksum += message_frame[i];
-          Serial.printf("%02X %02X, ", message_frame[i], checksum);
-      }
-      Serial.println("");
-      checksum &= 0xFF;
-      checksum =  0xFF - checksum;
-      message_frame[frame_idx++]  = checksum;
-      Serial.printf("Writing to the text display with chksum: %02X\n", checksum);
-      for(uint8_t i = 0; i<frame_length+3; i++){
-        Serial.printf("%02X ", message_frame[i]);
-      }
-      Serial.println("");
-      Serial1.write(message_frame, frame_length+3);
+    if (action.compare("colour") == 0){
+      // Split the string around ":"
+      // LHS=foreground, RHS=background.
+      // The RHS is optional.
+      //
     } else {
       Serial.print("The action does not match message");
+      server.send(405, "text/plain", "Unknown or unsupported action");
+      return;
     }
+
+    uint8_t checksum =  calc_checksum(&message_frame[2], frame_length);
+    message_frame[frame_idx++]  = checksum;
+    for(uint8_t i = 0; i<frame_length+3; i++){
+      Serial.printf("%02X ", message_frame[i]);
+    }
+    Serial.println("");
+    Serial1.write(message_frame, frame_length+3);
+
 
     server.send(200, "text/plain; charset=utf-8", "OK");
   }
-
-
-
 }
 
 
 void handle_NotFound(){
-  server.send(404, "application/json", "Not found");
+  server.send(404, "text/plain", "Not found");
 }
 
 void setup() {
