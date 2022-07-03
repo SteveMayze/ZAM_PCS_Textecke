@@ -98,8 +98,8 @@ void handle_request() {
       message_frame[frame_idx++] = ACTION_MESSAGE;
       for(uint8_t i = 0; i<  param.length();i++){
         message_frame[frame_idx++] = param[i];
-      }
-    if (action.compare("colour") == 0){
+      } 
+    } else if (action.compare("colour") == 0){
       // Split the string around ":"
       // LHS=foreground, RHS=background.
       // The RHS is optional.
