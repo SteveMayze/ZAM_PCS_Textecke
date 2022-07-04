@@ -15,7 +15,7 @@
 #define BAD_CHKSUM 0x83
 
 using namespace std;
-#define MESSAGE_SIZE 64
+#define MESSAGE_SIZE 200
 // typedef struct _Data_Frame {
 //   // uint8_t data_length;
 //   uint8_t action;
@@ -51,6 +51,17 @@ String send_response(){
   String ptr = "{}\n";
   return ptr;
 }
+
+uint8_t charmap[7][2] = {
+  {0xA4, 0xE4}, // ä
+  {0x84, 0xC4}, // Ä X
+  {0xB6, 0xF6}, // ö X
+  {0x96, 0xD6}, // Ö
+  {0xBC, 0xFC}, // ü X
+  {0x9C, 0xDC}, // Ü
+  {0x9F, 0xDF}, // ß
+};
+
 
 uint8_t calc_checksum(uint8_t message[], uint8_t length){
   uint8_t checksum = 0;
@@ -92,13 +103,34 @@ void handle_request() {
     uint8_t frame_length = 0;
     message_frame[frame_idx++] = FRAME_DELIMITER;
     if (action.compare("message") == 0){
-      frame_length = param.length() + 1;  // The length of the message + the action, one byte.
+      frame_length = 1;  // The length of the message + the action, one byte.
       message_frame[frame_idx++] = frame_length;
-      Serial.printf("Setting up the datagram. Data length: %02X\n", frame_length);
       message_frame[frame_idx++] = ACTION_MESSAGE;
+      Serial.print("Receving: ");
+      bool escape_mode = false;
       for(uint8_t i = 0; i<  param.length();i++){
-        message_frame[frame_idx++] = param[i];
+        Serial.printf("%02x ", param[i]);
+        if (escape_mode) {
+          uint8_t subst = 0x20;
+          for (uint8_t j = 0; j < 7; j++){
+            if ( charmap[j][0] == param[i]) {
+              subst = charmap[j][1];
+              break;
+            }
+          }
+          message_frame[frame_idx++] = subst;
+          frame_length++;
+          escape_mode = false;
+        } else if(param[i] == 0xC3){
+          escape_mode = true;
+        } else {
+          message_frame[frame_idx++] = param[i];
+          frame_length++;
+        }
       } 
+      Serial.println("");
+      message_frame[0x01] = frame_length;
+      Serial.printf("Setting up the datagram. Data length: %02X\n", frame_length);
     } else if (action.compare("colour") == 0){
       // Split the string around ":"
       // LHS=foreground, RHS=background.
