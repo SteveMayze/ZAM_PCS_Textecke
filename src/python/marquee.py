@@ -8,7 +8,7 @@ import requests
 
 logger = None
 
-rest_url = "http://192.168.178.34/"
+rest_url = "http://10.233.2.108/"
 
 class MessageWindow(object):
     
@@ -27,7 +27,7 @@ class MessageWindow(object):
         top = self.top = tk.Toplevel(master)
         top.geometry(f'{win_width}x150+{win_x}+{win_y}')
 
-        self.l = tk.Label(top,text="Bitte teilen Sie uns ein Nachrict")
+        self.l = tk.Label(top,text="Schreibe doch was")
         self.l.config(font=("Helvetica", 32))
         self.l.pack()
         self.e = tk.Entry(top, width=400, font=('Helvetica 24'))
@@ -39,12 +39,13 @@ class MessageWindow(object):
     def cleanup(self, event):
         self.value=self.e.get()
         self.top.destroy()
+        self.master.focus_set()
         
 
 class App( tk.Frame ):
    
     canvas = None
-    text_message = 'ZAM Post CORONA Stadt (PCS) Projekt 41 - Textecke'
+    text_message = 'TEXTECKE - ZAM Post Corona Stadt (PCS) Projekt 41'
     text_id = None
     
     def close_and_end(self, event):
@@ -67,13 +68,21 @@ class App( tk.Frame ):
         self.master.wait_window(self.w.top)
         self.master.focus_set()
         if self.w.value:
-            logging.info(f'{self.w.value}')
-            self.text_message = self.w.value
+            message = self.w.value 
+            if len(message) > 200:
+                message = message[0:190]
+                message += "..."
+            message += "   "
+            self.text_message = message
             self.canvas.itemconfig(self.text_id, text=self.text_message)
             self.post_message(self.text_message)
+            logging.info(f'{self.w.value}')
         else:
             logging.info('empty message')
+            self.canvas.itemconfig(self.text_id, text=self.text_message)
+            self.post_message(self.text_message)
             print('An empty message')
+        self.focus.set()
             
             
     def shift(self):
