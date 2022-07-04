@@ -50,6 +50,17 @@ class App( tk.Frame ):
     def close_and_end(self, event):
         logging.info('Exiting')
         exit()
+
+    def post_message(self, message):
+        print(f"Message to send: {message}")
+        payload = {"action":"message","param":message}
+        headers = {"Connection":"keep-alive", "Accept":"*/*" }
+        print(f"payload: {payload}")
+        s = requests.Session()            
+        response = s.post(rest_url, headers=headers, json=payload, timeout=30)
+        print(response.text)
+        
+
         
     def request_message(self, event):
         self.w = MessageWindow(self.master)
@@ -59,15 +70,7 @@ class App( tk.Frame ):
             logging.info(f'{self.w.value}')
             self.text_message = self.w.value
             self.canvas.itemconfig(self.text_id, text=self.text_message)
-            print(f"Message to send: {self.text_message}")
-            # payload = json.dumps({"action":"message", "param":self.text_message}, separators=(',',':'))
-            payload = {"action":"message","param":self.text_message}
-            headers = {"Connection":"keep-alive", "Accept":"*/*" }
-            
-            print(f"payload: {payload}")
-            s = requests.Session()            
-            response = s.post(rest_url, headers=headers, json=payload, timeout=30)
-            print(response.text)
+            self.post_message(self.text_message)
         else:
             logging.info('empty message')
             print('An empty message')
@@ -102,13 +105,14 @@ class App( tk.Frame ):
         self.text_id = self.canvas.create_text(self.canvas.winfo_width(), y1,text=text_var,font=('Helvetica',64,'normal'),fill='white',tags=("marquee",),anchor='w')
         x1,y1,x2,y2 = self.canvas.bbox("marquee")
         width = x2-x1
-        height = y2-y1
+        height = (y2-y1)+20
         self.canvas['width']=width
         self.canvas['height']=height
         self.fps=120    #Change the fps to make the animation faster/slower
         self.shift()
         master.bind('<Return>', self.request_message)
         master.bind('<Control-X>', self.close_and_end)
+        self.post_message(self.text_message)
         pyautogui.moveTo(width, height)
 
 
