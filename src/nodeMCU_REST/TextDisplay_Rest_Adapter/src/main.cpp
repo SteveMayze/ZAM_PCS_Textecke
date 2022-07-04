@@ -39,9 +39,8 @@ using namespace std;
 
 
 /*Put your SSID & Password*/
-const char* ssid = "WN0463FB2";  // Enter SSID here
-const char* password = "53240958296039385782";  //Enter Password here
-
+//const char* ssid = "SSID";  // Enter SSID here
+//const char* password = "PWD";  //Enter Password here
 
 StaticJsonDocument<1024> doc;
 
