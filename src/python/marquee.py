@@ -19,20 +19,16 @@ class App( Frame ):
 
     def post_message(self, message):
         if not debug:
-            print(f"Message to send: {message}")
             payload = {"action":"message","param":message}
             headers = {"Connection":"keep-alive", "Accept":"*/*" }
-            print(f"payload: {payload}")
             s = requests.Session()            
             response = s.post(rest_url, headers=headers, json=payload, timeout=30)
-            print(response.text)
         else:
             time.sleep(3)
     
     def handle_message(self, event):
         tmp_msg = self.new_message.get()
         if tmp_msg:
-            print(f"handle event {tmp_msg}")
             if len(tmp_msg) > 200:
                 tmp_msg = tmp_msg[0:190]
                 tmp_msg += "..."
@@ -43,9 +39,9 @@ class App( Frame ):
             self.new_message.set("")
             self.logger.info(f'{tmp_msg}')
             self.post_message(tmp_msg)
-            self.status.set("Aktual: ")
+            self.status.set("Aktuell: ")
         else:
-            print("Empty message")
+            self.logger.info("Empty message")
 
     def close_and_end(self, event):
         self.logger.info('Exiting')
@@ -56,6 +52,8 @@ class App( Frame ):
         ## self.pack()
         
         self.logger = logger
+
+        
         
         self.message = StringVar()
         self.new_message = StringVar()
@@ -78,7 +76,7 @@ class App( Frame ):
         scroll_frame = ttk.Frame(self.mainframe, padding="3 3 12 12")
         scroll_frame.grid(column=0, row=1)
 
-        self.status.set("Akutel: ")
+        self.status.set("Aktuell: ")
         status_message  = ttk.Label(scroll_frame, padding="3 3 12 12", textvariable=self.status)
         status_message.grid(column=0, row=0, sticky=(E, W))
         status_message.config(font=("Helvetica", 24))
@@ -91,12 +89,23 @@ class App( Frame ):
         entry_frame.grid(column=0, row=2, sticky=(E, W))
 
 
-        message_entry = ttk.Entry(entry_frame, width=70, font=('Helvetica 24'), textvariable=self.new_message)
+        message_entry = ttk.Entry(entry_frame, width=80, font=('Helvetica 24'), textvariable=self.new_message)
         message_entry.grid(column=2, row=1, sticky=(E, W))
 
         message_entry.focus()
 
         master.bind('<Return>', self.handle_message)
+        master.bind('<Escape>', self.close_and_end)
+
+        root_x = master.winfo_rootx()
+        root_y = master.winfo_rooty()
+        root_width = int(master.winfo_screenwidth() * 0.8)
+        root_height = int(master.winfo_screenheight() * 0.25)
+
+        win_x = root_x + (root_width // 2 ) - ( root_width // 2)
+        win_y = root_y + (root_height // 2)+75
+        master.geometry(f'{root_width}x{root_height}+{win_x}+{win_y}')
+
         self.post_message(self.message.get())
         
 
@@ -104,10 +113,12 @@ def main():
     logging.basicConfig(filename='marquee.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
     logger = logging.getLogger('ZAM_marquee')
     root = Tk()
+    root.title("Textecke")
     # root.attributes('-fullscreen', True)
     mq = App(root, logger)
     logger.info('Starting')
     mq.mainloop()
+    mq.close_and_end(None)
 
 
 if __name__ == '__main__':
