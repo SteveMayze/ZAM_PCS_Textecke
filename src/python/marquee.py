@@ -66,8 +66,7 @@ class App( Frame ):
         
     def __init__(self, master, logger):
         super().__init__(master)
-        ## self.pack()
-        
+
         self.logger = logger
 
         self.message = StringVar()
@@ -94,33 +93,22 @@ class App( Frame ):
         
         self.canvas = Canvas(self.scroll_frame,bg='black')
         self.canvas.grid(column=0, row=0, sticky=(N, S, E, W))
-        ## self.canvas.pack(fill=BOTH, expand=1)
-        x1 = self.canvas.winfo_width()
-        y1 = self.canvas.winfo_height()    
-        self.text_id = self.canvas.create_text(self.scroll_frame.winfo_width(), 40, text=self.message.get(),font=('Helvetica',40,'normal'),fill='white',tags=("marquee",),anchor='w')
+        x1 = int(master.winfo_screenwidth() ) # self.canvas.winfo_width()
+        y1 = self.canvas.winfo_height()//2    
+        self.text_id = self.canvas.create_text(x1, y1, text=self.message.get(),font=('Helvetica',48,'normal'),fill='white',tags=("marquee",),anchor='w')
         x1,y1,x2,y2 = self.canvas.bbox("marquee")
-        width = x2-x1
-        height = (y2-y1)+40
+        width =  int(master.winfo_screenwidth() * 0.95)
+        height = int(master.winfo_screenheight() * 0.8)
         self.canvas['width']=width
         self.canvas['height']=height
         self.fps=60    #Change the fps to make the animation faster/slower
         self.shift()
 
-
-        # self.status.set("Aktuell: ")
-        # status_message  = ttk.Label(scroll_frame, padding="3 3 12 12", textvariable=self.status)
-        # status_message.grid(column=0, row=0, sticky=(E, W))
-        # status_message.config(font=("Helvetica", 24))
-
-        # current_message = ttk.Label(scroll_frame, padding="3 3 12 12", textvariable=self.message)
-        # current_message.grid(column=1, row=0, sticky=(E, W))
-        # current_message.config(font=("Helvetica", 24))
-
         entry_frame = ttk.Frame(self.mainframe, padding="3 3 12 12")
         entry_frame.grid(column=0, row=2, sticky=(E, W))
 
 
-        message_entry = ttk.Entry(entry_frame, width=80, font=('Helvetica 24'), textvariable=self.new_message)
+        message_entry = ttk.Entry(entry_frame, width=100, font=('Helvetica 24'), textvariable=self.new_message)
         message_entry.grid(column=2, row=1, sticky=(E, W))
 
         message_entry.focus()
@@ -130,7 +118,7 @@ class App( Frame ):
 
         root_x = master.winfo_rootx()
         root_y = master.winfo_rooty()
-        root_width = int(master.winfo_screenwidth() * 0.8)
+        root_width = int(master.winfo_screenwidth() * 0.95)
         root_height = int(master.winfo_screenheight() * 0.30)
 
         win_x = root_x + (root_width // 2 ) - ( root_width // 2)
@@ -144,8 +132,8 @@ def main():
     logging.basicConfig(filename='marquee.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
     logger = logging.getLogger('ZAM_marquee')
     root = Tk()
+    root.attributes('-fullscreen', True)
     root.title("Textecke")
-    # root.attributes('-fullscreen', True)
     mq = App(root, logger)
     logger.info('Starting')
     mq.mainloop()
