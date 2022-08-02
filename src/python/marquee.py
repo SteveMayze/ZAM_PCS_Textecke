@@ -1,83 +1,58 @@
+from tkinter import *
 
-
-import tkinter as tk
-import logging
-import pyautogui
-import json
+from tkinter import ttk
 import requests
+import time
+import logging
+import os
+
+rest_url = os.getenv('REST_URL')
 
 logger = None
+debug = False
 
-rest_url = "http://192.168.178.35/"
-
-class MessageWindow(object):
-    
-    ref = None
-    
-    def __init__(self,master):
-        ref = master
-        root_x = master.winfo_rootx()
-        root_y = master.winfo_rooty()
-        root_width = master.winfo_width()
-
-        win_width = int(master.winfo_width() * 0.8)
-        win_x = root_x + (root_width // 2 ) - ( win_width // 2)
-        win_y = root_x + (master.winfo_height() // 2)+75
-
-        top = self.top = tk.Toplevel(master)
-        top.geometry(f'{win_width}x150+{win_x}+{win_y}')
-
-        self.l = tk.Label(top,text="Bitte teilen Sie uns ein Nachrict")
-        self.l.config(font=("Helvetica", 32))
-        self.l.pack()
-        self.e = tk.Entry(top, width=400, font=('Helvetica 24'))
-        self.e.pack()
-        self.e.focus_set()
-        top.bind('<Return>', self.cleanup)
-        top.bind('<Escape>', self.cleanup)
-
-    def cleanup(self, event):
-        self.value=self.e.get()
-        self.top.destroy()
-        
-
-class App( tk.Frame ):
-   
+class App( Frame ):
+    logger = None
+    message = None
+    new_message = None
     canvas = None
-    text_message = 'ZAM Post CORONA Stadt (PCS) Projekt 41 - Textecke'
-    text_id = None
-    
-    def close_and_end(self, event):
-        logging.info('Exiting')
-        exit()
-        
-    def request_message(self, event):
-        self.w = MessageWindow(self.master)
-        self.master.wait_window(self.w.top)
-        self.master.focus_set()
-        if self.w.value:
-            logging.info(f'{self.w.value}')
-            self.text_message = self.w.value
-            self.canvas.itemconfig(self.text_id, text=self.text_message)
-            print(f"Message to send: {self.text_message}")
-            # payload = json.dumps({"action":"message", "param":self.text_message}, separators=(',',':'))
-            payload = {"action":"message","param":self.text_message}
-            headers = {"Content-Type":"application/json",
-                       "Accept-Encoding":"gzip, deflate, br",
-                       "Accept": "*/*"
-                       }
-            
-            print(f"payload: {payload}")
-            
-            response = requests.post(rest_url, headers=headers,
-                                        data=payload,
-                                        timeout=30)
-            print(response.text)
+    status = None
+    scroll_frame = None
+    fps = 120
+
+    default_message = "TEXTECKE - ZAM Post Corona Stadt (PCS) Projekt 41   "
+
+    def post_message(self, message):
+        if not debug:
+            payload = {"action":"message","param":message}
+            headers = {"Connection":"keep-alive", "Accept":"*/*" }
+            s = requests.Session()
+            response = s.post(rest_url, headers=headers, json=payload, timeout=30)
         else:
-            logging.info('empty message')
-            print('An empty message')
-            
-            
+            time.sleep(1)
+
+    def handle_message(self, event):
+        tmp_msg = self.new_message.get()
+        if tmp_msg:
+            if len(tmp_msg) > 200:
+                tmp_msg = tmp_msg[0:190]
+                tmp_msg += "..."
+            tmp_msg += "   "
+
+            self.status.set("Senden: ")
+            self.message.set(tmp_msg)
+            self.new_message.set("")
+            self.logger.info(f'{tmp_msg}')
+            self.canvas.itemconfig(self.text_id, text=self.message.get())
+            self.post_message(tmp_msg)
+            self.status.set("Aktuell: ")
+        else:
+            self.logger.debug("Empty message")
+
+    def close_and_end(self, event):
+        self.logger.debug('Stopping')
+        exit()
+
     def shift(self):
         x1,y1,x2,y2 = self.canvas.bbox("marquee")
         if( x2<0 or y1<0 ): #reset the coordinates
@@ -87,46 +62,85 @@ class App( tk.Frame ):
             x1,y1,x2,y2 = self.canvas.bbox("marquee")
         else:
             self.canvas.move("marquee", -2, 0)
-            
+
         self.canvas.after(1000//self.fps, self.shift)
 
-    def __init__(self, master):
-        super().__init__(master)
-        self.pack()
 
-        master.title('Textecke')
-        ## master.geometry("1500x400")
-        ## self.canvas = tk.Canvas(master,bg='black',height=400, width=1500)
-        self.canvas = tk.Canvas(master,bg='black')
-        self.canvas.pack(fill=tk.BOTH, expand=1)
-        text_var =  self.text_message
-        
-        x1 = self.canvas.winfo_width()
-        y1 = self.canvas.winfo_height()//2        
-        
-        self.text_id = self.canvas.create_text(self.canvas.winfo_width(), y1,text=text_var,font=('Helvetica',64,'normal'),fill='white',tags=("marquee",),anchor='w')
+    def __init__(self, master, logger):
+        super().__init__(master)
+
+        self.logger = logger
+
+        self.message = StringVar()
+        self.new_message = StringVar()
+        self.status = StringVar()
+
+        self.mainframe = ttk.Frame(master, padding="3 3 12 12")
+        self.mainframe.grid(column=0, row=0, sticky=(N, S, E, W))
+        self.mainframe.pack(fill=BOTH, expand=1)
+        master.columnconfigure(0, weight=1)
+        master.rowconfigure(0, weight=1)
+
+        self.message.set(self.default_message)
+
+        help_frame = ttk.Frame(self.mainframe, padding="3 3 12 12")
+        help_frame.grid(column=0, row=0)
+        help_message = ttk.Label(help_frame, padding="3 3 12 12", text="Schreibe doch was")
+        help_message.grid(column=0, row=0, sticky=(E, W))
+        help_message.config(font=("Helvetica", 32))
+
+        self.scroll_frame = ttk.Frame(self.mainframe)
+        self.scroll_frame.grid(column=0, row=1)
+
+
+        self.canvas = Canvas(self.scroll_frame,bg='black')
+        self.canvas.grid(column=0, row=0, sticky=(N, S, E, W))
+        x1 = int(master.winfo_screenwidth() ) # self.canvas.winfo_width()
+        y1 = self.canvas.winfo_height()//2
+        self.text_id = self.canvas.create_text(x1, y1, text=self.message.get(),font=('Helvetica',48,'normal'),fill='white',tags=("marquee",),anchor='w')
         x1,y1,x2,y2 = self.canvas.bbox("marquee")
-        width = x2-x1
-        height = y2-y1
+        width =  int(master.winfo_screenwidth() * 0.95)
+        height = int(master.winfo_screenheight() * 0.8)
         self.canvas['width']=width
         self.canvas['height']=height
-        self.fps=120    #Change the fps to make the animation faster/slower
+        self.fps=60    #Change the fps to make the animation faster/slower
         self.shift()
-        master.bind('<Return>', self.request_message)
-        master.bind('<Control-X>', self.close_and_end)
-        pyautogui.moveTo(width, height)
+
+        entry_frame = ttk.Frame(self.mainframe, padding="3 3 12 12")
+        entry_frame.grid(column=0, row=2, sticky=(E, W))
+
+
+        message_entry = ttk.Entry(entry_frame, width=100, font=('Helvetica 24'), textvariable=self.new_message)
+        message_entry.grid(column=2, row=1, sticky=(E, W))
+
+        message_entry.focus()
+
+        master.bind('<Return>', self.handle_message)
+        master.bind('<Escape>', self.close_and_end)
+
+        root_x = master.winfo_rootx()
+        root_y = master.winfo_rooty()
+        root_width = int(master.winfo_screenwidth() * 0.95)
+        root_height = int(master.winfo_screenheight() * 0.30)
+
+        win_x = root_x + (root_width // 2 ) - ( root_width // 2)
+        win_y = root_y + (root_height // 2)+75
+        master.geometry(f'{root_width}x{root_height}+{win_x}+{win_y}')
+
+        self.post_message(self.message.get())
 
 
 def main():
-    logging.basicConfig(filename='marquee.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+    logging.basicConfig(filename='marquee.log', level=logging.INFO, format='%(asctime)s %(message)s')
     logger = logging.getLogger('ZAM_marquee')
-    root = tk.Tk()
+    root = Tk()
     root.attributes('-fullscreen', True)
-    mq = App(root)
-    logging.info('Starting')
+    root.title("Textecke")
+    mq = App(root, logger)
+    logger.debug('Starting')
     mq.mainloop()
+    mq.close_and_end(None)
 
 
 if __name__ == '__main__':
     main()
-    

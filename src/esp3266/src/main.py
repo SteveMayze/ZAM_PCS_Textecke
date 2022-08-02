@@ -38,6 +38,48 @@ def stringToBytes(s):
     """
     return s.encode('ascii') if sys.version_info >= (3, 0) else s
 
+def send_error_response(conn, response):
+  conn.send('HTTP/1.1 405 ERROR\n')
+  conn.send('Content-Type: text/plain\n')
+  conn.send('Connection: close\n\n')
+  conn.sendall(response)
+
+def send_ok_response(conn, response):
+  conn.send('HTTP/1.1 200 OK\n')
+  conn.send('Content-Type: text/plain\n')
+  conn.send('Connection: close\n\n')
+  conn.sendall(response)
+
+def get_colour_byte(colour_name):
+  colour_byte = -1
+  if colour_name == 'black':
+    colour_byte = 0x00
+  if colour_name == 'red':
+    colour_byte = 0x01
+  elif colour_name == 'orange':
+    colour_byte = 0x02
+  elif colour_name == 'yellow':
+    colour_byte = 0x03
+  elif colour_name == 'green':
+    colour_byte = 0x04
+  elif colour_name == 'blue':
+    colour_byte = 0x05
+  elif colour_name == 'indigo':
+    colour_byte = 0x06
+  elif colour_name == 'violet':
+    colour_byte = 0x07
+  elif colour_name == 'white':
+    colour_byte = 0x08
+
+  return colour_byte
+
+def calc_chksum(frame):
+  chksum = 0
+  for bb in frame[2:]:
+    chksum += bb
+  chksum = chksum & 0xFF
+  return intToByte( 0xFF - chksum)
+
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind(('', 80))
@@ -49,16 +91,42 @@ while True:
   print('Waiting for a connection')
   conn, addr = s.accept()
   print('Got a connection from %s' % str(addr))
+  time.sleep(1)
   request = conn.recv(1024)
   request = str(request)
   print('Content = %s' % request)
 
-  bodyIdx = request.find('\\r\\n\\r\\n') + 8
-  body = request[bodyIdx:-1]
+  ## bodyIdx = request.find('\\r\\n\\r\\n') + 8
+  ## body = request[bodyIdx:-1]
+  request_array = request.split('\\r\\n')
+  ## print('Request array %s' % request_array)
+  bodyIdx = 0
+  for ll in request_array:
+    print("%d - %s" % (bodyIdx, ll))
+    bodyIdx += 1
+    if ll == '':
+      break;
+  print('Body start line %d' % bodyIdx)
+  body_array = request_array[bodyIdx-1:]
+  body = ''
+  for bb in body_array:
+    body += bb
+  body = body[:-1]
+  print('located body: %s ' % body)
 
-  print('body: %s ' % body)
+  if body == None or body == '':
+    response = 'error - The body is empty'
+    send_error_response(conn, response)
+    conn.close()
+    continue
+  try:
+    jbody = json.loads(body)
+  except:
+    response = 'Error The body can not be parsed %s' % body
+    send_error_response(conn, response)
+    conn.close()
+    continue
 
-  jbody = json.loads(body)
   action = jbody['action']
   if action == 'message':
     text = jbody['param']
@@ -69,12 +137,7 @@ while True:
     frame.append(0x01)
     frame += stringToBytes(text)
 
-    chksum = 0
-    for bb in frame[2:]:
-      chksum += bb
-    chksum = chksum & 0xFF
-    chksum = intToByte( 0xFF - chksum)
-
+    chksum = calc_chksum(frame)
     frame += chksum
 
     print('Frame: %s ' % frame)
@@ -82,35 +145,19 @@ while True:
     print("Sent %d" % sent)
 
   if action == 'colour':
-    colour = jbody['param']
-
+    colour_array = jbody['param'].split(':')
     frame = bytearray()
     frame.append(0xFE)
+    frame.append(len(colour_array)+1)
     frame.append(0x02)
-    frame.append(0x02)
-    if colour == 'red':
-      frame.append(0x01)
-    elif colour == 'orange':
-      frame.append(0x01)
-    elif colour == 'yellow':
-      frame.append(0x01)
-    elif colour == 'green':
-      frame.append(0x02)
-    elif colour == 'blue':
-      frame.append(0x03)
-    elif colour == 'indigo':
-      frame.append(0x03)
-    elif colour == 'violate':
-      frame.append(0x03)
-    else:
-      frame.append(0x01)
+    for c in colour_array:
+      colour_byte = get_colour_byte(c)
+      if colour_byte < 0:
+        send_error_response(conn, 'The colour specification is incorrect')
+        continue
+      frame.append(colour_byte)
 
-    chksum = 0
-    for bb in frame[2:]:
-      chksum += bb
-    chksum = chksum & 0xFF
-    chksum = intToByte( 0xFF - chksum)
-
+    chksum = calc_chksum(frame)
     frame += chksum
 
     print('Frame: %s ' % frame)
@@ -131,13 +178,7 @@ while True:
     else:
       frame.append(0x7F)
     
-
-    chksum = 0
-    for bb in frame[2:]:
-      chksum += bb
-    chksum = chksum & 0xFF
-    chksum = intToByte( 0xFF - chksum)
-
+    chksum = calc_chksum(frame)
     frame += chksum
 
     print('Frame: %s ' % frame)
@@ -150,12 +191,7 @@ while True:
     frame.append(0x01)
     frame.append(0x04)
 
-    chksum = 0
-    for bb in frame[2:]:
-      chksum += bb
-    chksum = chksum & 0xFF
-    chksum = intToByte( 0xFF - chksum)
-
+    chksum = calc_chksum(frame)
     frame += chksum
 
     print('Frame: %s ' % frame)
@@ -167,22 +203,13 @@ while True:
     uart_response = 'void'
     if uart_response == None:
       response = 'error - send to UART failed - timeout'
-      conn.send('HTTP/1.1 405 OK\n')
-      conn.send('Content-Type: text/plain\n')
-      conn.send('Connection: close\n\n')
-      conn.sendall(response)
+      send_error_response(conn, response)
     else:
       response = 'success %s' % uart_response
-      conn.send('HTTP/1.1 200 OK\n')
-      conn.send('Content-Type: text/plain\n')
-      conn.send('Connection: close\n\n')
-      conn.sendall(response)
+      send_ok_response(conn, response)
   else:
-    response = 'error - send to UART failed.'
-    conn.send('HTTP/1.1 405 OK\n')
-    conn.send('Content-Type: text/plain\n')
-    conn.send('Connection: close\n\n')
-    conn.sendall(response)
+    send_error_response(conn, response)
 
   conn.close()
+
 

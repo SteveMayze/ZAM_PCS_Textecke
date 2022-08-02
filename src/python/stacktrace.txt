@@ -1,0 +1,65 @@
+python post_test.py 
+Message to send: Hello I am calling
+payload: {"action": "message", "param": "Hello I am calling"}
+Traceback (most recent call last):
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/connectionpool.py", line 703, in urlopen
+    httplib_response = self._make_request(
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/connectionpool.py", line 449, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 3, in raise_from
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/connectionpool.py", line 444, in _make_request
+    httplib_response = conn.getresponse()
+  File "/usr/lib/python3.9/http/client.py", line 1347, in getresponse
+    response.begin()
+  File "/usr/lib/python3.9/http/client.py", line 307, in begin
+    version, status, reason = self._read_status()
+  File "/usr/lib/python3.9/http/client.py", line 268, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/usr/lib/python3.9/socket.py", line 704, in readinto
+    return self._sock.recv_into(b)
+ConnectionResetError: [Errno 104] Connection reset by peer
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/requests/adapters.py", line 489, in send
+    resp = conn.urlopen(
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/connectionpool.py", line 785, in urlopen
+    retries = retries.increment(
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/util/retry.py", line 550, in increment
+    raise six.reraise(type(error), error, _stacktrace)
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/packages/six.py", line 769, in reraise
+    raise value.with_traceback(tb)
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/connectionpool.py", line 703, in urlopen
+    httplib_response = self._make_request(
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/connectionpool.py", line 449, in _make_request
+    six.raise_from(e, None)
+  File "<string>", line 3, in raise_from
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/urllib3/connectionpool.py", line 444, in _make_request
+    httplib_response = conn.getresponse()
+  File "/usr/lib/python3.9/http/client.py", line 1347, in getresponse
+    response.begin()
+  File "/usr/lib/python3.9/http/client.py", line 307, in begin
+    version, status, reason = self._read_status()
+  File "/usr/lib/python3.9/http/client.py", line 268, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/usr/lib/python3.9/socket.py", line 704, in readinto
+    return self._sock.recv_into(b)
+urllib3.exceptions.ProtocolError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/post_test.py", line 16, in <module>
+    response = requests.request("POST", rest_url, headers=headers, data=payload, timeout=30)
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/requests/sessions.py", line 587, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/requests/sessions.py", line 701, in send
+    r = adapter.send(request, **kwargs)
+  File "/home/steve/projects/ZAM_PCS_Textecke/src/python/.venv/lib/python3.9/site-packages/requests/adapters.py", line 547, in send
+    raise ConnectionError(err, request=request)
+requests.exceptions.ConnectionError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))
+(.venv) steve@texteck-dev:~/projects/ZAM_PCS_Textecke/src/python $ 
+
