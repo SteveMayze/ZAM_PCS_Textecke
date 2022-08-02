@@ -1,6 +1,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
+#include "secrets.h"
 
 #define TRACE(...) Serial.printf(__VA_ARGS__)
 
@@ -39,8 +40,9 @@ using namespace std;
 
 
 /*Put your SSID & Password*/
-//const char* ssid = "SSID";  // Enter SSID here
-//const char* password = "PWD";  //Enter Password here
+// These are defined in the secrets.h (not provided)
+const char* ssid = SECRET_SSID;  // Enter SSID here
+const char* password = SECRET_KEY;  //Enter Password here
 
 StaticJsonDocument<1024> doc;
 
@@ -51,8 +53,7 @@ String send_response(){
   return ptr;
 }
 
-#define SPECIAL_CHAR 8
-uint8_t charmap[SPECIAL_CHAR][2] = {
+uint8_t charmap[7][2] = {
   {0xA4, 0xE4}, // ä
   {0x84, 0xC4}, // Ä X
   {0xB6, 0xF6}, // ö X
@@ -60,7 +61,6 @@ uint8_t charmap[SPECIAL_CHAR][2] = {
   {0xBC, 0xFC}, // ü X
   {0x9C, 0xDC}, // Ü
   {0x9F, 0xDF}, // ß
-  {0xA7, 0xA7}, // §
 };
 
 
@@ -113,7 +113,7 @@ void handle_request() {
         Serial.printf("%02x ", param[i]);
         if (escape_mode) {
           uint8_t subst = 0x20;
-          for (uint8_t j = 0; j < SPECIAL_CHAR; j++){
+          for (uint8_t j = 0; j < 7; j++){
             if ( charmap[j][0] == param[i]) {
               subst = charmap[j][1];
               break;
@@ -122,7 +122,7 @@ void handle_request() {
           message_frame[frame_idx++] = subst;
           frame_length++;
           escape_mode = false;
-        } else if(param[i] == 0xC3 || param[i] == 0xC2 ){
+        } else if(param[i] == 0xC3){
           escape_mode = true;
         } else {
           message_frame[frame_idx++] = param[i];
