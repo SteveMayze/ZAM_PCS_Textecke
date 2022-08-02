@@ -9,6 +9,7 @@ Since revision 1. was not working the way it was intended to, an alternative was
 
 ## Setup
 
+The <nodemcu> should be substitued with the IP address of the NodeMCU unit to receive the messages.
 
 ```shell
 git clone ...
@@ -17,44 +18,18 @@ cd src/python
 python3 -m venv .venv
 pip install -r requirements.txt
 
+export REST_URL=http://<nodemcu>
 .venv/bin/python marquee.py
+```
+
+If using this on Windows i.e. Powershell, the set the REST_URL with
+
+```shell
+$Env:REST_URL = "http://<nodemcu>"
 ```
 
 ## Usasge
 Once started, a default message will show. This message will coninually scroll across the screen until the user presses the return key.
 When the return key is pressed, a pop-up dialog will appear and prompt for a messages. The user presses the return key once more and the pop-up will disapear and the scrolling text will be replaced with the new message.
 
-To exit the marquee - press Ctrl-Shift-X
-
-# Revision 1. Setup
-
-The main setup is required on the Raspberry Pi to act as the key reader. Once set up, the keys captured on the Raspberry Pi are passed onto the Teensy which is acting as a keyboard emulator.
-The Teensy needs to be programmed with the Arduino program in `src/teensy/TextDisplayDriver.ino`
-
-## Raspberry Pi
-
-```shell
-git clone ...
-cd ZAM_PCS_Textecke
-cd src/raspi
-python3 -m venv .venv
-pip install -r requirements.txt
-```
-
-# Execution
-
-## Raspberry Pi
-
-There are two ways to start the keyreader script. Once is via Python, the other is to use the helper bash script. Using the bash shell script does not required activating the python virtual env.
-
-### bash
-```shell
-./keyreader.sh
-```
-
-### Python
-
-```shell
-. .venv/bin/activate
-python keyreader.py
-```
+To exit the marquee - press Ctrl-Shift-X or Escape

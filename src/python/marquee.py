@@ -4,11 +4,13 @@ from tkinter import ttk
 import requests
 import time
 import logging
+import os
 
-rest_url = "http://10.233.2.108/"
+rest_url = os.getenv('REST_URL')
 
 logger = None
-debug = True
+debug = False
+
 class App( Frame ):
     logger = None
     message = None
@@ -17,18 +19,18 @@ class App( Frame ):
     status = None
     scroll_frame = None
     fps = 120
-    
+
     default_message = "TEXTECKE - ZAM Post Corona Stadt (PCS) Projekt 41   "
 
     def post_message(self, message):
         if not debug:
             payload = {"action":"message","param":message}
             headers = {"Connection":"keep-alive", "Accept":"*/*" }
-            s = requests.Session()            
+            s = requests.Session()
             response = s.post(rest_url, headers=headers, json=payload, timeout=30)
         else:
             time.sleep(1)
-    
+
     def handle_message(self, event):
         tmp_msg = self.new_message.get()
         if tmp_msg:
@@ -36,7 +38,7 @@ class App( Frame ):
                 tmp_msg = tmp_msg[0:190]
                 tmp_msg += "..."
             tmp_msg += "   "
-            
+
             self.status.set("Senden: ")
             self.message.set(tmp_msg)
             self.new_message.set("")
@@ -45,12 +47,12 @@ class App( Frame ):
             self.post_message(tmp_msg)
             self.status.set("Aktuell: ")
         else:
-            self.logger.info("Empty message")
+            self.logger.debug("Empty message")
 
     def close_and_end(self, event):
-        self.logger.info('Exiting')
+        self.logger.debug('Stopping')
         exit()
-        
+
     def shift(self):
         x1,y1,x2,y2 = self.canvas.bbox("marquee")
         if( x2<0 or y1<0 ): #reset the coordinates
@@ -60,10 +62,10 @@ class App( Frame ):
             x1,y1,x2,y2 = self.canvas.bbox("marquee")
         else:
             self.canvas.move("marquee", -2, 0)
-            
+
         self.canvas.after(1000//self.fps, self.shift)
 
-        
+
     def __init__(self, master, logger):
         super().__init__(master)
 
@@ -72,7 +74,7 @@ class App( Frame ):
         self.message = StringVar()
         self.new_message = StringVar()
         self.status = StringVar()
-        
+
         self.mainframe = ttk.Frame(master, padding="3 3 12 12")
         self.mainframe.grid(column=0, row=0, sticky=(N, S, E, W))
         self.mainframe.pack(fill=BOTH, expand=1)
@@ -89,12 +91,12 @@ class App( Frame ):
 
         self.scroll_frame = ttk.Frame(self.mainframe)
         self.scroll_frame.grid(column=0, row=1)
-        
-        
+
+
         self.canvas = Canvas(self.scroll_frame,bg='black')
         self.canvas.grid(column=0, row=0, sticky=(N, S, E, W))
         x1 = int(master.winfo_screenwidth() ) # self.canvas.winfo_width()
-        y1 = self.canvas.winfo_height()//2    
+        y1 = self.canvas.winfo_height()//2
         self.text_id = self.canvas.create_text(x1, y1, text=self.message.get(),font=('Helvetica',48,'normal'),fill='white',tags=("marquee",),anchor='w')
         x1,y1,x2,y2 = self.canvas.bbox("marquee")
         width =  int(master.winfo_screenwidth() * 0.95)
@@ -126,20 +128,19 @@ class App( Frame ):
         master.geometry(f'{root_width}x{root_height}+{win_x}+{win_y}')
 
         self.post_message(self.message.get())
-        
+
 
 def main():
-    logging.basicConfig(filename='marquee.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
+    logging.basicConfig(filename='marquee.log', level=logging.INFO, format='%(asctime)s %(message)s')
     logger = logging.getLogger('ZAM_marquee')
     root = Tk()
     root.attributes('-fullscreen', True)
     root.title("Textecke")
     mq = App(root, logger)
-    logger.info('Starting')
+    logger.debug('Starting')
     mq.mainloop()
     mq.close_and_end(None)
 
 
 if __name__ == '__main__':
     main()
-        
