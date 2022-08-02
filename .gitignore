@@ -179,3 +179,6 @@ dmypy.json
 
 test*.py
 *.code-workspace
+
+*.private
+
