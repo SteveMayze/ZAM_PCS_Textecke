@@ -27,7 +27,7 @@ class App( Frame ):
             payload = {"action":"message","param":message}
             headers = {"Connection":"keep-alive", "Accept":"*/*" }
             s = requests.Session()
-            response = s.post(rest_url, headers=headers, json=payload, timeout=30)
+            response = s.post(rest_url+"/api/v1/", headers=headers, json=payload, timeout=30)
         else:
             time.sleep(1)
 
