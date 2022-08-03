@@ -76,7 +76,18 @@ uint8_t calc_checksum(uint8_t message[], uint8_t length){
   return checksum;
 }
 
-void handle_request() {
+void handle_base_page_request() {
+  Serial.println("Received HTTP GET request");
+  if (server.method() != HTTP_GET) {
+    server.send(405, "text/plain", "Method Not Allowed");
+  } else {
+
+  }
+}
+
+
+void handle_rest_request() {
+  Serial.println("Received REST POST request");
 
   if (server.method() != HTTP_POST) {
     server.send(405, "text/plain", "Method Not Allowed");
@@ -182,7 +193,8 @@ void setup() {
   Serial.println("WiFi connected..!");
   Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
 
-  server.on("/", HTTP_POST, handle_request);
+  server.on("/api/v1/", HTTP_POST, handle_rest_request);
+  server.on("/textecke/", HTTP_GET, handle_base_page_request);
   server.onNotFound(handle_NotFound);
 
   server.begin();
