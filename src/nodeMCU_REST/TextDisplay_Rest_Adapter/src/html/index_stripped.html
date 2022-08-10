@@ -1,0 +1,127 @@
+\"<!DOCTYPE html>\
+<html>\
+<head>\
+    <title>ZAM Textecke</title>\
+    <style>\
+        h1 {\
+            font-family: Arial, Helvetica, sans-serif;\
+            font-size: 32pt;\
+            text-align: center;\
+            background-color: #ffffff;\
+            color: rgb(12, 172, 172);\
+        }\
+        input.text_input {\
+            width: 95%%;\
+        }\
+        div.marquee {\
+            background-color: #000000;\
+            color: #FFFFFF;\
+            padding-left: 15px;\
+            padding-right: 15px;\
+            padding-top: 0px;\
+            padding-bottom: 0px;\
+            font-size: 32pt;\
+        }\
+        div.input_field {\
+            padding-top: 10px;\
+            padding-bottom: 10px;\
+        }\
+        .input_button {\
+            padding-left: 10px;\
+            padding-right: 10px;\
+        }\
+        div.input_form {\
+            font-family: Arial, Helvetica, sans-serif;\
+            padding: 15px;\
+        }\
+        p {\
+            -moz-animation: marquee 15s linear infinite;\
+            -webkit-animation: marquee 15s linear infinite;\
+            animation: marquee 15s linear infinite;\
+            padding-left: 15px;\
+            padding-right: 15px;\
+        }\
+        @-moz-keyframes marquee {\
+            0%% {\
+                transform: translateX(100%%);\
+            }\
+\
+            100%% {\
+                transform: translateX(-100%%);\
+            }\
+        }\
+        @-webkit-keyframes marquee {\
+            0%% {\
+                transform: translateX(100%%);\
+            }\
+\
+            100%% {\
+                transform: translateX(-100%%);\
+            }\
+        }\
+        @keyframes marquee {\
+            0%% {\
+                -moz-transform: translateX(100%%);\
+                -webkit-transform: translateX(100%%);\
+                transform: translateX(100%%)\
+            }\
+\
+            100%% {\
+                -moz-transform: translateX(-100%%);\
+                -webkit-transform: translateX(-100%%);\
+                transform: translateX(-100%%);\
+            }\
+        }\
+    </style>\
+</head>\
+<body>\
+    <div class=\"header\">\
+        <h1>ZAM Textecke</h1>\
+    </div>\
+    <div class=\"marquee\">\
+        <p>%s</p>\
+    </div>\
+    <div class=\"input_form\">\
+        <form id=\"message-form\" method=\"POST\" action=\"/textecke/\">\
+            <fieldset>\
+                <legend>Nachrict</legend>\
+                <div class=\"input_field\">\
+                    <label for=\"message-input\">Text eingeben:</label>\
+                    <input id=\"message-input\" name=\"message\" placeholder=\"Enter some text\" maxlength=\"200\"\
+                        class=\"text_input\" />\
+                </div>\
+                <div class=\"input_field\">\
+                    <label for=\"background-select\">Hintergrund:</label>\
+                    <select id=\"background-select\" name=\"background\">\
+                        <option value=\"BLACK\" selected>black</option>\
+                        <option value=\"RED\">red</option>\
+                        <option value=\"ORANGE\">orange</option>\
+                        <option value=\"YELLOW\">yellow</option>\
+                        <option value=\"GREEN\">green</option>\
+                        <option value=\"BLUE\">blue</option>\
+                        <option value=\"VIOLET\">violet</option>\
+                        <option value=\"WHITE\">white</option>\
+                    </select>\
+                </div>\
+                <div class=\"input_field\">\
+                    <label for=\"forground-select\">Voredergrund:</label>\
+                    <select id=\"foreground-select\" name=\"foreground\">\
+                        <option value=\"BLACK\">black</option>\
+                        <option value=\"RED\">red</option>\
+                        <option value=\"ORANGE\">orange</option>\
+                        <option value=\"YELLOW\">yellow</option>\
+                        <option value=\"GREEN\">green</option>\
+                        <option value=\"BLUE\">blue</option>\
+                        <option value=\"VIOLET\">violet</option>\
+                        <option value=\"WHITE\" selected>white</option>\
+                    </select>\
+                </div>\
+            </fieldset>\
+            <div class=\"input_field\">\
+                <button type=\"reset\" value=\"DEFAULT\" class=\"input_button\">zurucksetzen</button>\
+                <button value=\"OK\" class=\"input_button\">OK</button>\
+            </div>\
+        </form>\
+    </div>\
+</body>\
+</html>\"
