@@ -473,7 +473,7 @@ void handle_rest_request()
 
     String action = doc["action"];
     String param = doc["param"];
-
+    strcpy(current_message, param.c_str());
     render_and_send(action, param);
 
     server.send(200, "text/plain; charset=utf-8", "OK");
@@ -509,7 +509,7 @@ void setup()
   Serial.print("Got IP: ");
   Serial.println(WiFi.localIP());
 
-  server.on("/api/v1/", HTTP_POST, handle_rest_request);
+  server.on("/api/v1/message", HTTP_POST, handle_rest_request);
   server.on("/textecke", HTTP_GET, handle_get_page_request);
   server.on("/textecke", HTTP_POST, handle_post_form_request);
   server.onNotFound(handle_NotFound);
