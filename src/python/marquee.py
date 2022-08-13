@@ -27,7 +27,7 @@ class App( Frame ):
             payload = {"action":"message","param":message}
             headers = {"Connection":"keep-alive", "Accept":"*/*" }
             s = requests.Session()
-            response = s.post(rest_url, headers=headers, json=payload, timeout=30)
+            response = s.post(rest_url+"/api/v1/message", headers=headers, json=payload, timeout=30)
         else:
             time.sleep(1)
 
@@ -75,57 +75,46 @@ class App( Frame ):
         self.new_message = StringVar()
         self.status = StringVar()
 
-        self.mainframe = ttk.Frame(master, padding="3 3 12 12")
-        self.mainframe.grid(column=0, row=0, sticky=(N, S, E, W))
-        self.mainframe.pack(fill=BOTH, expand=1)
         master.columnconfigure(0, weight=1)
         master.rowconfigure(0, weight=1)
 
+        self.mainframe = ttk.Frame(master, padding="5 5 12 12")
+        self.mainframe.grid(column=0, row=0, sticky=(N, S, E, W))
+        self.mainframe.columnconfigure(0, weight=1)
+        self.mainframe.rowconfigure(0, weight=1)
+
         self.message.set(self.default_message)
 
-        help_frame = ttk.Frame(self.mainframe, padding="3 3 12 12")
-        help_frame.grid(column=0, row=0)
-        help_message = ttk.Label(help_frame, padding="3 3 12 12", text="Schreibe doch was")
-        help_message.grid(column=0, row=0, sticky=(E, W))
-        help_message.config(font=("Helvetica", 32))
-
-        self.scroll_frame = ttk.Frame(self.mainframe)
-        self.scroll_frame.grid(column=0, row=1)
-
-
-        self.canvas = Canvas(self.scroll_frame,bg='black')
-        self.canvas.grid(column=0, row=0, sticky=(N, S, E, W))
-        x1 = int(master.winfo_screenwidth() ) # self.canvas.winfo_width()
+        title_frame = ttk.Frame(self.mainframe)
+        title_frame.grid(column=0, row=0)
+        title = ttk.Label(title_frame, text="Textecke")
+        title.grid(column=0, row=0, sticky=(E, W))
+        title.config(font=("Helvetica", 32))
+        self.canvas = Canvas(self.mainframe,bg='black')
+        self.canvas.grid(column=0, row=1, rowspan=2, sticky=(N, S, E, W))
+        x1 = int(self.canvas.winfo_width()) 
         y1 = self.canvas.winfo_height()//2
-        self.text_id = self.canvas.create_text(x1, y1, text=self.message.get(),font=('Helvetica',48,'normal'),fill='white',tags=("marquee",),anchor='w')
-        x1,y1,x2,y2 = self.canvas.bbox("marquee")
-        width =  int(master.winfo_screenwidth() * 0.95)
+        self.text_id = self.canvas.create_text(x1, y1, text=self.message.get(),font=('Noto Mono',48,'normal'),fill='white',tags=("marquee",),anchor='w')
         height = int(master.winfo_screenheight() * 0.8)
-        self.canvas['width']=width
         self.canvas['height']=height
         self.fps=60    #Change the fps to make the animation faster/slower
         self.shift()
 
-        entry_frame = ttk.Frame(self.mainframe, padding="3 3 12 12")
-        entry_frame.grid(column=0, row=2, sticky=(E, W))
+        entry_frame = ttk.Frame(self.mainframe)
+        entry_frame.grid(column=0, row=3, sticky=(S, E, W))
 
+        title = ttk.Label(entry_frame, text="Schreibe doch was")
+        title.grid(column=0, row=0, sticky=(E), padx=5)
+        title.config(font=("Helvetica", 16))
 
         message_entry = ttk.Entry(entry_frame, width=100, font=('Helvetica 24'), textvariable=self.new_message)
-        message_entry.grid(column=2, row=1, sticky=(E, W))
+        message_entry.grid(column=1, row=0,  sticky=(S, E, W))
 
         message_entry.focus()
 
         master.bind('<Return>', self.handle_message)
         master.bind('<Escape>', self.close_and_end)
 
-        root_x = master.winfo_rootx()
-        root_y = master.winfo_rooty()
-        root_width = int(master.winfo_screenwidth() * 0.95)
-        root_height = int(master.winfo_screenheight() * 0.30)
-
-        win_x = root_x + (root_width // 2 ) - ( root_width // 2)
-        win_y = root_y + (root_height // 2)+75
-        master.geometry(f'{root_width}x{root_height}+{win_x}+{win_y}')
 
         self.post_message(self.message.get())
 
