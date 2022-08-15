@@ -5,7 +5,7 @@ The [ZAM](https://betreiberverein.de/?doing_wp_cron=1649430713.64831709861755371
 Further deatils can be found on the project page (German) [41 Textecke](https://wiki.betreiberverein.de/books/projekte-aktuell/page/41-textecke-639)
 
 # Python Screen Marquee Effect
-Since revision 1. was not working the way it was intended to, an alternative was set up to run a Python Marquee type program on the screen only. The usage is still the same - the user presses the return key, enters a message and then presses the return key again and the text on the screen is replaced with the new message.
+Since revision 1. was not working the way it was intended to, an alternative was set up to run a Python Marquee type program on the screen only. The usage has changed somewhat from the original concept. The is now an input field at the bottom of the screen where the user can enter the text and send it off by pressing the Enter key. There is now no more a seperate window for the entering of the text.
 
 ## Setup
 
@@ -29,7 +29,9 @@ $Env:REST_URL = "http://<nodemcu>"
 ```
 
 ## Usasge
-Once started, a default message will show. This message will coninually scroll across the screen until the user presses the return key.
-When the return key is pressed, a pop-up dialog will appear and prompt for a messages. The user presses the return key once more and the pop-up will disapear and the scrolling text will be replaced with the new message.
+Once started, a default message will show. This message will coninually scroll across the screen.
+The user enters their message at the bottom of the screen and presses the Enter key and the message will be updatd on the screen and on the text display.
 
 To exit the marquee - press Ctrl-Shift-X or Escape
+
+There is now a HTML page that enables the text display to be used as a standalone unit. The Python program will still operate on the Raspberry Pi. The HTML version has the added benefit of being able set the colour for the text and background.
