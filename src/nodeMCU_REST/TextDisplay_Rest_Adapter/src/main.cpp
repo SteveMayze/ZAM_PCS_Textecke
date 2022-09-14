@@ -166,8 +166,8 @@ optionElement.style.color = color;\
 </html>";
 
 String html_page;
-char current_message[200] = "Wilkommen in ZAM ";
-char new_message[200] = "Wilkommen in ZAM ";
+char current_message[200] = "Wilkommen im ZAM ";
+char new_message[200] = "Wilkommen im ZAM ";
 char foreground[16] = "WHITE";
 char background[16] = "BLACK";
 
@@ -329,12 +329,13 @@ void render_and_send(String action, String param) {
       message_frame[0x01] = frame_length;
       Serial.printf("Setting up the datagram. Data length: %02X\n", frame_length);
     }
-    else if (action.equals("colour"))
+    else if (action.equals("colour")||action.equals("color"))
     {
       // Split the string around ":"
       // LHS=foreground, RHS=background.
       // The RHS is optional.
       //
+      param.toUpperCase();
       int sep = param.indexOf(':');
       if ( sep > 0){
         strcpy(foreground, param.substring(0, sep).c_str());
