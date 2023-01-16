@@ -166,8 +166,8 @@ optionElement.style.color = color;\
 </html>";
 
 String html_page;
-char current_message[200] = "Wilkommen im ZAM ";
-char new_message[200] = "Wilkommen im ZAM ";
+char current_message[200] = "Willkommen im ZAM ";
+char new_message[200] = "Willkommen im ZAM ";
 char foreground[16] = "WHITE";
 char background[16] = "BLACK";
 
