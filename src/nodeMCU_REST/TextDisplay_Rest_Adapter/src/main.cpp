@@ -16,7 +16,7 @@
 #define BAD_CHKSUM 0x83
 
 using namespace std;
-#define MESSAGE_SIZE 200
+#define MESSAGE_SIZE 128
 // typedef struct _Data_Frame {
 //   // uint8_t data_length;
 //   uint8_t action;
@@ -166,8 +166,8 @@ optionElement.style.color = color;\
 </html>";
 
 String html_page;
-char current_message[200] = "Willkommen im ZAM ";
-char new_message[200] = "Willkommen im ZAM ";
+char current_message[MESSAGE_SIZE] = "Willkommen im ZAM ";
+char new_message[MESSAGE_SIZE] = "Willkommen im ZAM ";
 char foreground[16] = "WHITE";
 char background[16] = "BLACK";
 
@@ -283,6 +283,13 @@ String generate_option(bool fg_option) {
   return option_result;
 }
 
+/**
+ * @brief Takes and action and its parameter, renders the data frame and
+ * sends this via the UART to the controlled device.
+ * 
+ * @param action 
+ * @param param 
+ */
 void render_and_send(String action, String param) {
     Serial.printf("action: %s, param: %s\n", action.c_str(), param.c_str());
     uint8_t message_frame[255];
@@ -416,6 +423,11 @@ void handle_post_form_request()
     String tempstr;
     tempstr = server.arg("message");
     Serial.printf("Assigning the message %s\n", tempstr.c_str());
+    if(tempstr.length() > MESSAGE_SIZE){
+        Serial.printf("The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
+        tempstr = tempstr.substring(0, MESSAGE_SIZE-10);
+        tempstr.concat("...");
+    }
     strcpy(new_message, tempstr.c_str());
     tempstr = server.arg("foreground");
     Serial.printf("Assigning the foreground: %s\n", tempstr.c_str());
@@ -444,6 +456,10 @@ void handle_post_form_request()
   }
 }
 
+/**
+ * @brief Handles the REST API requests.
+ * 
+ */
 void handle_rest_request()
 {
   Serial.println("Received REST POST request");
@@ -458,7 +474,7 @@ void handle_rest_request()
 
     if (server.hasArg("plain") == false)
     { // Check if body received
-      server.send(200, "text/plain", "Body not received");
+      server.send(200, "text/plain", "The body must be of type application/json");
       return;
     }
     String content = server.arg("plain");
@@ -474,6 +490,11 @@ void handle_rest_request()
 
     String action = doc["action"];
     String param = doc["param"];
+    if(param.length() > MESSAGE_SIZE){
+        Serial.printf("The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
+        param = param.substring(0, MESSAGE_SIZE-10);
+        param.concat("...");
+    }
     strcpy(current_message, param.c_str());
     render_and_send(action, param);
 
