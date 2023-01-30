@@ -16,26 +16,7 @@
 #define BAD_CHKSUM 0x83
 
 using namespace std;
-#define MESSAGE_SIZE 128
-// typedef struct _Data_Frame {
-//   // uint8_t data_length;
-//   uint8_t action;
-//   char data[MESSAGE_SIZE];
-//   // uint8_t checksum;
-
-// } Data_Frame;
-
-// typedef struct _Messasge_Frame {
-//     uint8_t frame_header; // 0xFE;
-//     uint8_t data_length;
-//     Data_Frame data_frame;
-//     uint8_t checksum;
-// } Message_Frame_Type;
-
-// typedef union {
-//     Message_Frame_Type item;
-//     uint8_t raw[68];
-// } Message_Frame;
+#define MESSAGE_SIZE 200
 
 /*Put your SSID & Password*/
 // These are defined in the secrets.h (not provided)
@@ -422,9 +403,9 @@ void handle_post_form_request()
     Serial.println("Starting form processing");
     String tempstr;
     tempstr = server.arg("message");
-    Serial.printf("Assigning the message %s\n", tempstr.c_str());
-    if(tempstr.length() > MESSAGE_SIZE){
-        Serial.printf("The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
+    Serial.printf("Assigning the message: %s\n", tempstr.c_str());
+    if(tempstr.length() > MESSAGE_SIZE-10){
+        Serial.printf("The message is greater than %d characters. Truncating\n", MESSAGE_SIZE-10);
         tempstr = tempstr.substring(0, MESSAGE_SIZE-10);
         tempstr.concat("...");
     }
@@ -439,18 +420,20 @@ void handle_post_form_request()
     Serial.printf("message: %s\n", new_message);
     Serial.printf("foreground: %s\n", foreground);
     Serial.printf("background: %s\n", background);
-    Serial.printf("Rendering the message to send: %s\n", new_message);
-    if(strlen(new_message) > 0){
-      render_and_send("message", new_message);
-      strcpy(current_message, new_message);
-      Serial.printf("Current Message %s\n", current_message);
-    }
+
     tempstr = foreground;
     tempstr.concat(":");
     tempstr.concat(background);
 
     Serial.printf("Rendering the colours to send: %s\n", tempstr.c_str());
     render_and_send("colour", tempstr.c_str());
+
+    Serial.printf("Rendering the message to send: %s\n", new_message);
+    if(strlen(new_message) > 0){
+      render_and_send("message", new_message);
+      strcpy(current_message, new_message);
+      Serial.printf("Current Message %s\n", current_message);
+    }
 
     return_main_page();
   }
