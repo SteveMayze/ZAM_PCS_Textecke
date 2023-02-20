@@ -6,10 +6,33 @@ import time
 import logging
 import os
 
+from pathlib import Path
+import re
+
 rest_url = os.getenv('REST_URL')
 
 logger = None
 debug = False
+
+default_message = "Willkommen im ZAM   "
+
+def get_last_message( log_file_name):
+    log_file = Path(log_file_name)
+    if log_file.exists():
+        ## Get the last message
+        with open(log_file_name, "rb") as f:
+            try:
+                f.seek(-2, os.SEEK_END)
+                while f.read(1) != b'\n':
+                    f.seek(-2, os.SEEK_CUR)
+            except OSError:
+                f.seek(0)
+            last_line = f.readline().decode()
+        last_line = re.sub("\n+", "", last_line)
+        message = re.sub("^[0-9-]{10} [0-9:,]{12} ", "", last_line)
+    else:
+        message = default_message
+    return message
 
 class App( Frame ):
     logger = None
@@ -19,8 +42,6 @@ class App( Frame ):
     status = None
     scroll_frame = None
     fps = 120
-
-    default_message = "TEXTECKE - ZAM Post Corona Stadt (PCS) Projekt 41   "
 
     def post_message(self, message):
         if not debug:
@@ -66,7 +87,7 @@ class App( Frame ):
         self.canvas.after(1000//self.fps, self.shift)
 
 
-    def __init__(self, master, logger):
+    def __init__(self, master, logger, default_message):
         super().__init__(master)
 
         self.logger = logger
@@ -83,7 +104,7 @@ class App( Frame ):
         self.mainframe.columnconfigure(0, weight=1)
         self.mainframe.rowconfigure(0, weight=1)
 
-        self.message.set(self.default_message)
+        self.message.set(default_message)
 
         title_frame = ttk.Frame(self.mainframe)
         title_frame.grid(column=0, row=0)
@@ -125,7 +146,11 @@ def main():
     root = Tk()
     root.attributes('-fullscreen', True)
     root.title("Textecke")
-    mq = App(root, logger)
+
+    message = get_last_message('marquee.log')
+    logger.debug(f"message: {message}")
+
+    mq = App(root, logger, message)
     logger.debug('Starting')
     mq.mainloop()
     mq.close_and_end(None)
