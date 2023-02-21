@@ -22,6 +22,7 @@ using namespace std;
 // These are defined in the secrets.h (not provided)
 const char *ssid = SECRET_SSID;    // Enter SSID here
 const char *password = SECRET_KEY; // Enter Password here
+const char *hostname = "zam-textecke";
 
 const String index_html = "<!DOCTYPE html>\
 <html>\
@@ -501,8 +502,11 @@ void setup()
   Serial.println("Connecting to ");
   Serial.println(ssid);
   // connect to your local wi-fi network
-  WiFi.begin(ssid, password);
+  WiFi.mode(WIFI_STA);
 
+  Serial.printf("Default hostname: %s\n", WiFi.hostname().c_str());
+  WiFi.hostname(hostname);
+  WiFi.begin(ssid, password);
   // check wi-fi is connected to wi-fi network
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -511,6 +515,7 @@ void setup()
   }
   Serial.println("");
   Serial.println("WiFi connected..!");
+  Serial.printf("This hostname: %s\n", WiFi.hostname().c_str());
   Serial.print("Got IP: ");
   Serial.println(WiFi.localIP());
 

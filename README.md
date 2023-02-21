@@ -29,7 +29,7 @@ $Env:REST_URL = "http://<nodemcu>"
 ```
 
 ## Usasge
-Once started, a default message will show. This message will coninually scroll across the screen.
+Once started, a default message will show. This message will continually scroll across the screen.
 The user enters their message at the bottom of the screen and presses the Enter key and the message will be updatd on the screen and on the text display.
 
 To exit the marquee - press Ctrl-Shift-X or Escape
