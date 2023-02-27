@@ -29,7 +29,10 @@ def get_last_message( log_file_name):
                 f.seek(0)
             last_line = f.readline().decode()
         last_line = re.sub("\n+", "", last_line)
-        message = re.sub("^[0-9-]{10} [0-9:,]{12} ", "", last_line)
+        if last_line:
+            message = re.sub("^[0-9-]{10} [0-9:,]{12} ", "", last_line)
+        else:
+            message = default_message
     else:
         message = default_message
     return message
