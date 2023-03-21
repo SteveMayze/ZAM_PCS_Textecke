@@ -22,7 +22,7 @@ using namespace std;
 // These are defined in the secrets.h (not provided)
 const char *ssid = SECRET_SSID;    // Enter SSID here
 const char *password = SECRET_KEY; // Enter Password here
-const char *hostname = "zam-textecke";
+const char *hostname = HOST_NAME; // The preferred host name for the server
 
 const String index_html = "<!DOCTYPE html>\
 <html>\
