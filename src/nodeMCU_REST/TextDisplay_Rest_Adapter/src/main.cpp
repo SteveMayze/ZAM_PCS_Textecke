@@ -1,12 +1,17 @@
 #include <ArduinoJson.h>
+
 #include "secrets.h"
 
+// #define TEMPLATE_PLACEHOLDER 'Ω'
+#define TEMPLATE_PLACEHOLDER '$'
+
 #ifdef ESP32
-#include <WiFi.h>
-#include <AsyncTCP.h>
+  #include <WiFi.h>
+  #include <AsyncTCP.h>
 #elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
+  #include <ESP8266WiFi.h>
+  #include <ESPAsyncTCP.h>
+  #include "AsyncJson.h"
 #endif
 
 #include <ESPAsyncWebServer.h>
@@ -146,30 +151,42 @@ String generate_option(bool fg_option) {
     sprintf(line, opt_template.c_str(), layer, data[i].c_str(),value.c_str(), selected, data[i].c_str());
     option_result.concat(line);
   }
-  LOG_DEBUG_F("Generated option: %s\n", option_result.c_str());
+  // LOG_DEBUG_F("Generated option: %s\n", option_result.c_str());
   return option_result;
 }
 
-String processor(const String &var) {
-    LOG_DEBUG_LN("Starting form rendering");
-    String back_option = generate_option(false);
-    String front_option = generate_option(true);
-    if (var == "MESAGE_TOKEN"){
-      return current_message;
-    }
+String css_processor(const String &var) {
+    LOG_DEBUG_F("css_processor var: %s \n", var.c_str());
     if( var == "MARQUEE_FOREGROUND_TOKEN"){
+      LOG_DEBUG_F("css_processor var MARQUEE_FOREGROUND_TOKEN: %s \n" , foreground);
       return foreground;
     }
     if( var == "MARQUEE_BACKGROUND_TOKEN"){
+      LOG_DEBUG_F("css_processor var MARQUEE_BACKGROUND_TOKEN: %s \n" , background);
       return background;
     }
+    LOG_DEBUG_F("css_processor Unknown var: %s \n" , var.c_str());
+    return var; // Fehler => leerer String
+}
+
+String html_processor(const String &var) {
+    LOG_DEBUG_F("html_processor var: %s \n", var.c_str());
+    if (var == "MESAGE_TOKEN"){
+      LOG_DEBUG_F("html_processor var MESAGE_TOKEN: %s \n" , current_message);
+      return current_message;
+    }
     if( var == "BACKGROUND_OPTION_TOKEN"){
+      String back_option = generate_option(false);
+      LOG_DEBUG_F("html_processor var BACKGROUND_OPTION_TOKEN: %s \n" , back_option.c_str());
       return back_option;
     }
     if( var == "FOREGROUND_OPTION_TOKEN"){
+      String front_option = generate_option(true);
+      LOG_DEBUG_F("html_processor var FOREGROUND_OPTION_TOKEN: %s \n" , front_option.c_str());
       return front_option;
     }
-    return String(); // Fehler => leerer String
+    LOG_DEBUG_F("html_processor Unknown var: %s \n" , var.c_str());
+    return var; // Fehler => leerer String
 }
 
 /**
@@ -179,7 +196,7 @@ String processor(const String &var) {
  * @param action 
  * @param param 
  */
-void render_and_send(AsyncWebServerRequest *request, String action, String param) {
+void render_and_send(String action, String param) {
     LOG_DEBUG_F("action: %s, param: %s\n", action.c_str(), param.c_str());
     uint8_t message_frame[255];
     uint8_t frame_idx = 0;
@@ -187,15 +204,16 @@ void render_and_send(AsyncWebServerRequest *request, String action, String param
     message_frame[frame_idx++] = FRAME_DELIMITER;
     if (action.equals("message"))
     {
+      strcpy(current_message, param.c_str());
       param.concat(" ");
       frame_length = 1; // The length of the message + the action, one byte.
       message_frame[frame_idx++] = frame_length;
       message_frame[frame_idx++] = ACTION_MESSAGE;
-      LOG_DEBUG("Preparing the message action: ");
+      LOG_DEBUG("Preparing the message action");
       bool escape_mode = false;
       for (uint8_t i = 0; i < param.length(); i++)
       {
-        LOG_DEBUG_F("%02x ", param[i]);
+        Serial.printf("%02x ", param[i]);
         if (escape_mode)
         {
           uint8_t subst = 0x20;
@@ -243,7 +261,7 @@ void render_and_send(AsyncWebServerRequest *request, String action, String param
       frame_length = 1; // The length of the message + the action, one byte.
       message_frame[frame_idx++] = frame_length;
       message_frame[frame_idx++] = ACTION_COLOUR;
-      LOG_DEBUG("Preparing the colour action: ");
+      LOG_DEBUG_LN("Preparing the colour action: ");
 
       message_frame[frame_idx++] = get_colour_byte(foreground);
       frame_length++;
@@ -258,19 +276,28 @@ void render_and_send(AsyncWebServerRequest *request, String action, String param
     else
     {
       LOG_DEBUG("The action does not match message");
-      request->send(405, "text/plain", "Unknown or unsupported action");
+      // request->send(405, "text/plain", "Unknown or unsupported action");
       return;
     }
 
     uint8_t checksum = calc_checksum(&message_frame[2], frame_length);
     message_frame[frame_idx++] = checksum;
-    for (uint8_t i = 0; i < frame_length + 3; i++)
-    {
-      LOG_DEBUG_F("%02X ", message_frame[i]);
-    }
-    LOG_DEBUG_LN("");
+    LOG_BYTE_STREAM("Frame: ",  message_frame, frame_length);
+    // for (uint8_t i = 0; i < frame_length + 3; i++)
+    // {
+    //   LOG_DEBUG_F("%02X ", message_frame[i]);
+    // }
+    // LOG_DEBUG_LN("");
     Serial1.write(message_frame, frame_length + 3);
-    request->send(SPIFFS, "/index.html", String(), false, processor); 
+    // request->send(LittleFS, "/index.html", String(), false, html_processor); 
+    // request->redirect("/");
+
+
+    // String response;
+    // LOG_DEBUG_F("Current message %s", current_message);
+    // serializeJson(doc, response);
+    // LOG_DEBUG_F("REST Response: %s \n", response.c_str());
+    // request->send(200, "application/json", response);
 
 }
 
@@ -308,16 +335,18 @@ void handle_post_form_request(AsyncWebServerRequest *request)
     tempstr.concat(background);
 
     LOG_DEBUG_F("Rendering the colours to send: %s\n", tempstr.c_str());
-    render_and_send(request, "colour", tempstr.c_str());
+    render_and_send( "colour", tempstr.c_str());
 
     LOG_DEBUG_F("Rendering the message to send: %s\n", new_message);
-    if(strlen(new_message) > 0){
-      render_and_send(request, "message", new_message);
+    if(strlen(new_message) > 0) {
+      render_and_send( "message", new_message);
       strcpy(current_message, new_message);
-      LOG_DEBUG_F("Current Message %s\n", current_message);
+      LOG_DEBUG_F("Current Message: %s\n", current_message);
     }
 
-    request->send(SPIFFS, "/index.html", String(), false, processor); 
+    LOG_DEBUG_LN("Sending the main page back\n");
+    request->send(LittleFS, "/index.html", String(), false, html_processor); 
+    // request->redirect("/");
   }
 }
 
@@ -329,48 +358,31 @@ void handle_rest_request(AsyncWebServerRequest *request)
 {
   LOG_DEBUG_LN("Received REST POST request");
 
-  if (request->method() != HTTP_POST)
-  {
-    request->send(405, "text/plain", "Method Not Allowed");
-  }
-  else
-  {
     String result = "";
-
-    if (request->hasArg("plain") == false)
-    { // Check if body received
-      request->send(200, "text/plain", "The body must be of type application/json");
-      return;
-    }
-    String content = request->arg("plain");
-    LOG_DEBUG_LN("Content: " + content);
-    DeserializationError error = deserializeJson(doc, content);
-    if (error)
-    {
-      LOG_DEBUG(F("deserializeJson() failed: "));
-      LOG_DEBUG_LN(error.f_str());
-      request->send(405, "text/plain", "bad content");
-      return;
-    }
 
     String action = doc["action"];
     String param = doc["param"];
     if(param.length() > MESSAGE_SIZE){
-        LOG_DEBUG_F("The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
+        LOG_DEBUG_F("handle_rest_request: The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
         param = param.substring(0, MESSAGE_SIZE-10);
         param.concat("...");
     }
-    strcpy(current_message, param.c_str());
-    render_and_send(request, action, param);
+    LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s", action.c_str(), param.c_str());
+    render_and_send( action, param);
+
+    String response;
+    LOG_DEBUG_F("Current message %s \n", current_message);
+    serializeJson(doc, response);
+    LOG_DEBUG_F("REST Response: %s \n", response.c_str());
 
     request->send(200, "text/plain; charset=utf-8", "OK");
-  }
+  
 }
-
 
 void handle_notFound(AsyncWebServerRequest *request)
 {
-  request->send(404, "text/plain", "Not found");
+  LOG_DEBUG_F("handle_notFound: Unable to handle the request: %s", request->url().c_str());
+  request->send(404, "text/plain", "The textecke resource was not found url");
 }
 
 
@@ -393,7 +405,7 @@ void setup()
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(1000);
-    LOG_DEBUG(".");
+    Serial.print(".");
   }
   LOG_DEBUG_LN("");
   LOG_DEBUG_LN("WiFi connected..!");
@@ -407,29 +419,51 @@ if(!LittleFS.begin()){
   }
  
   // -- REST
-  server.on("/api/v1/message", HTTP_POST, handle_rest_request);
+  // server.on("/api/v1/message", HTTP_POST, handle_rest_request);
+  AsyncCallbackJsonWebHandler *handle_json = new AsyncCallbackJsonWebHandler("/api/v1/message", [](AsyncWebServerRequest *request, JsonVariant &json) {
+    // StaticJsonDocument<200> data;
+      if (json.is<JsonArray>())
+      {
+        doc = json.as<JsonArray>();
+      }
+      else if (json.is<JsonObject>())
+      {
+        doc = json.as<JsonObject>();
+      }
+      String response;
+      handle_rest_request(request);
+    }); 
 
-  // -- HTTP
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-                { 
-                  request->send(SPIFFS, "/index.html", String(), false, processor); 
-                });
+    server.addHandler(handle_json);
+    // -- HTTP
+    server.on("/textecke", HTTP_GET, [](AsyncWebServerRequest *request)
+                  { 
+                    request->send(LittleFS, "/index.html", String(), false, html_processor); 
+                  });
 
-  // server.on("/textecke", HTTP_POST, handle_post_form_request);
-  server.on("/textecke", HTTP_POST, handle_post_form_request);
-  server.onNotFound(handle_notFound);
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
+                  { 
+                    request->send(LittleFS, "/style.css", String(), false, css_processor); 
+                  });
 
-  server.begin();
-  LOG_DEBUG_LN("HTTP server started");
+    server.on("/ZAM_ot-Logo-wt.png", HTTP_GET, [](AsyncWebServerRequest *request)
+                  { request->send(LittleFS, "/ZAM_ot-Logo-wt.png", "image/png"); });
 
-  //  render_and_send("message", current_message);
+    server.on("/textecke", HTTP_POST, handle_post_form_request);
+
+    server.onNotFound(handle_notFound);
+
+    server.begin();
+    LOG_DEBUG_LN("HTTP server started");
+
+    render_and_send("message", current_message);
     String tempstr = foreground;
     tempstr.concat(":");
     tempstr.concat(background);
-    LOG_DEBUG_F("Rendering the colours to send: %s\n", tempstr.c_str());
-  //  render_and_send("colour", tempstr.c_str());
+    // LOG_DEBUG_F("Rendering the colours to send: %s\n", tempstr.c_str());
+    render_and_send("colour", tempstr.c_str());
 }
 void loop()
 {
-  ;
+
 }

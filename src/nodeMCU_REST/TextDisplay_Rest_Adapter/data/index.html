@@ -2,116 +2,29 @@
 <html>
 
 <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>ZAM Textecke</title>
-    <style>
-        h1 {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 32pt;
-            text-align: center;
-        }
-
-        input.text_input {
-            width: 95%;
-        }
-
-        div.marquee {
-            background-color: {
-                %MARQUEE_BACKGROUND_TOKEN%
-            }
-
-            ;
-
-            color: {
-                %MARQUEE_FOREGROUND_TOKEN%
-            }
-
-            ;
-            padding-left: 15px;
-            padding-right: 15px;
-            padding-top: 0px;
-            padding-bottom: 0px;
-            font-size: 32pt;
-        }
-
-        div.input_field {
-            padding-top: 10px;
-            padding-bottom: 10px;
-        }
-        div.header {
-            background-color: rgb(56, 108, 162);
-            color: rgb(255,255,255);
-        }
-
-        .input_button {
-            padding-left: 10px;
-            padding-right: 10px;
-        }
-
-        div.input_form {
-            font-family: Arial, Helvetica, sans-serif;
-            padding: 15px;
-        }
-
-        p {
-            -moz-animation: marquee 15s linear infinite;
-            -webkit-animation: marquee 15s linear infinite;
-            animation: marquee 15s linear infinite;
-            padding-left: 15px;
-            padding-right: 15px;
-        }
-
-        @-moz-keyframes marquee {
-            0% {
-                transform: translateX(100%);
-            }
-
-            100% {
-                transform: translateX(-100%);
-            }
-        }
-
-        @-webkit-keyframes marquee {
-            0% {
-                transform: translateX(100%);
-            }
-
-            100% {
-                transform: translateX(-100%);
-            }
-        }
-
-        @keyframes marquee {
-            0% {
-                -moz-transform: translateX(100%);
-                -webkit-transform: translateX(100%);
-                transform: translateX(100%)
-            }
-
-            100% {
-                -moz-transform: translateX(-100%);
-                -webkit-transform: translateX(-100%);
-                transform: translateX(-100%);
-            }
-        }
-    </style>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 
 <body>
     <div class="header">
-        <table>
+        <table width="80%">
             <tr>
-                <td width="20%">
-                    <img src="ZAM_ohne_Text-Logo-white-transbg.png" width="75%" height="75%"/>
+                <td colspan="1">
+                    <img src="ZAM_ot-Logo-wt.png" width="128" height="64"/>
                 </td>
-                <td width="80%">
+                <td  colspan="5">
                     <h1>Textecke</h1>
                 </td>
             </tr>
-    
         </table>
     </div>
     <div id="marquee_panel" class="marquee">
-        <p>%MESAGE_TOKEN%</p>
+        <p>$MESAGE_TOKEN$</p>
     </div>
     <div class="input_form">
         <form id="message-form" method="POST" action="/textecke">
@@ -125,13 +38,13 @@
                 <div class="input_field">
                     <label for="background-select">Hintergrund:</label>
                     <select id="background-select" onchange="changeBackColor(this);" name="background">
-                        %BACKGROUND_OPTION_TOKEN%%
+                        $BACKGROUND_OPTION_TOKEN$
                     </select>
                 </div>
                 <div class="input_field">
                     <label for="forground-select">Voredergrund:</label>
                     <select id="foreground-select" onchange="changeForeColor(this);" name="foreground">
-                        %FOREGROUND_OPTION_TOKEN%
+                        $FOREGROUND_OPTION_TOKEN$
                     </select>
                 </div>
             </fieldset>

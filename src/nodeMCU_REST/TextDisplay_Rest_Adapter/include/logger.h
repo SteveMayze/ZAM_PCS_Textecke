@@ -15,12 +15,13 @@
 #define LOGGER_LEVEL_DEBUG 4
 #define LOGGER_LEVEL_ALL 7
 
-#define LOGGER_LEVEL LOGGER_LEVEL_INFO
-    
+#define LOGGER_LEVEL LOGGER_LEVEL_DEBUG
+
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_OFF
     #define LOG_ERROR(args...) { Serial.print("ERROR: "); Serial.print(args); }
     #define LOG_ERROR_F(args...) { Serial.print("ERROR: "); Serial.printf(args); }
     #define LOG_ERROR_LN(args...) { Serial.print("ERROR: "); Serial.println(args); }
+    #define LOG(args...){  Serial.println(args); }
 #else
     #define LOG_ERROR(args...)
     #define LOG_ERROR_F(args...)
