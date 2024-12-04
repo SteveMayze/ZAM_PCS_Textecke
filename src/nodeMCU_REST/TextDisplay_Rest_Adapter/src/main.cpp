@@ -213,7 +213,7 @@ void render_and_send(String action, String param) {
       bool escape_mode = false;
       for (uint8_t i = 0; i < param.length(); i++)
       {
-        Serial.printf("%02x ", param[i]);
+        LOG_DEBUG_S("%02x ", param[i]);
         if (escape_mode)
         {
           uint8_t subst = 0x20;
@@ -405,13 +405,13 @@ void setup()
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(1000);
-    Serial.print(".");
+    LOG_INFO_S(".");
   }
-  LOG_DEBUG_LN("");
-  LOG_DEBUG_LN("WiFi connected..!");
-  LOG_DEBUG_F("This hostname: %s\n", WiFi.hostname().c_str());
-  LOG_DEBUG("Got IP: ");
-  LOG_DEBUG_LN(WiFi.localIP());
+  LOG_INFO_LN("");
+  LOG_INFO_LN("WiFi connected..!");
+  LOG_INFO_F("This hostname: %s\n", WiFi.hostname().c_str());
+  LOG_INFO("Got IP: ");
+  LOG_INFO_LN(WiFi.localIP());
 
 if(!LittleFS.begin()){
       LOG_DEBUG_LN("An Error has occurred while mounting LittleFS");

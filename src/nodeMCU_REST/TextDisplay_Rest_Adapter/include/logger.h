@@ -15,27 +15,30 @@
 #define LOGGER_LEVEL_DEBUG 4
 #define LOGGER_LEVEL_ALL 7
 
-#define LOGGER_LEVEL LOGGER_LEVEL_DEBUG
+#define LOGGER_LEVEL LOGGER_LEVEL_INFO
 
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_OFF
     #define LOG_ERROR(args...) { Serial.print("ERROR: "); Serial.print(args); }
     #define LOG_ERROR_F(args...) { Serial.print("ERROR: "); Serial.printf(args); }
     #define LOG_ERROR_LN(args...) { Serial.print("ERROR: "); Serial.println(args); }
-    #define LOG(args...){  Serial.println(args); }
+    #define LOG_ERROR_S(args...){  Serial.print(args); }
 #else
     #define LOG_ERROR(args...)
     #define LOG_ERROR_F(args...)
     #define LOG_ERROR_LN(args...)
+    #define LOG_ERROR_S(args...)
 #endif
 
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_ERROR
     #define LOG_INFO(args...) { Serial.print("INFO: "); Serial.print(args); }
     #define LOG_INFO_F(args...) { Serial.print("INFO: "); Serial.printf(args); }
     #define LOG_INFO_LN(args...) { Serial.print("INFO: "); Serial.println(args); }
+    #define LOG_INFO_S(args...){  Serial.print(args); }
 #else
     #define LOG_INFO(args...) 
     #define LOG_INFO_F(args...) 
     #define LOG_INFO_LN(args...) 
+    #define LOG_INFO_S(args...)
 #endif
 
 
@@ -43,14 +46,16 @@
     #define LOG_DEBUG(args...)  { Serial.print("DEBUG: "); Serial.print(args); }
     #define LOG_DEBUG_F(args...) { Serial.print("DEBUG: "); Serial.printf(args); }
     #define LOG_DEBUG_LN(args...) { Serial.print("DEBUG: "); Serial.println(args); }
+    #define LOG_DEBUG_S(args...){  Serial.print(args); }
 #else
     #define LOG_DEBUG(args...) 
     #define LOG_DEBUG_F(args...) 
     #define LOG_DEBUG_LN(args...) 
+    #define LOG_DEBUG_S(args...)
 #endif
 
     
-#if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_ERROR
+#if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_INFO
     #define LOG_BYTE_STREAM(prefix, byte_stream, stream_size) { \
         LOG_INFO(prefix);                                       \
         for(int idx = 0; idx<stream_size; idx++) {              \
