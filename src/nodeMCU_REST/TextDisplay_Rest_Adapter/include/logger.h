@@ -22,11 +22,15 @@
     #define LOG_ERROR_F(args...) { Serial.print("ERROR: "); Serial.printf(args); }
     #define LOG_ERROR_LN(args...) { Serial.print("ERROR: "); Serial.println(args); }
     #define LOG_ERROR_S(args...){  Serial.print(args); }
+    #define LOG_ERROR_SF(args...){  Serial.printf(args); }
+    #define LOG_ERROR_SLN(args...){  Serial.println(args); }
 #else
     #define LOG_ERROR(args...)
     #define LOG_ERROR_F(args...)
     #define LOG_ERROR_LN(args...)
     #define LOG_ERROR_S(args...)
+    #define LOG_ERROR_SF(args...)
+    #define LOG_ERROR_SLN(args...)
 #endif
 
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_ERROR
@@ -34,11 +38,15 @@
     #define LOG_INFO_F(args...) { Serial.print("INFO: "); Serial.printf(args); }
     #define LOG_INFO_LN(args...) { Serial.print("INFO: "); Serial.println(args); }
     #define LOG_INFO_S(args...){  Serial.print(args); }
+    #define LOG_INFO_SF(args...){  Serial.printf(args); }
+    #define LOG_INFO_SLN(args...){  Serial.println(args); }
 #else
     #define LOG_INFO(args...) 
     #define LOG_INFO_F(args...) 
     #define LOG_INFO_LN(args...) 
     #define LOG_INFO_S(args...)
+    #define LOG_INFO_SF(args...)
+    #define LOG_INFO_SLN(args...)
 #endif
 
 
@@ -47,11 +55,15 @@
     #define LOG_DEBUG_F(args...) { Serial.print("DEBUG: "); Serial.printf(args); }
     #define LOG_DEBUG_LN(args...) { Serial.print("DEBUG: "); Serial.println(args); }
     #define LOG_DEBUG_S(args...){  Serial.print(args); }
+    #define LOG_DEBUG_SF(args...){  Serial.printf(args); }
+    #define LOG_DEBUG_SLN(args...){  Serial.println(args); }
 #else
     #define LOG_DEBUG(args...) 
     #define LOG_DEBUG_F(args...) 
     #define LOG_DEBUG_LN(args...) 
     #define LOG_DEBUG_S(args...)
+    #define LOG_DEBUG_SF(args...)
+    #define LOG_DEBUG_SLN(args...)
 #endif
 
     
@@ -69,8 +81,8 @@
 
     
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_ERROR
-    #define LOG_BIT_STREAM(value, bits) {      \
-        int v = value, num_places = bits, mask = 0, n;                                            \
+    #define LOG_BIT_STREAM(value, bits) {                           \
+        int v = value, num_places = bits, mask = 0, n;              \
         for (n = 1; n <= num_places; n++)                           \
         {                                                           \
             mask = (mask << 1) | 0x0001;                            \

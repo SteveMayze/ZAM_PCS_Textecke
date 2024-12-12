@@ -204,7 +204,7 @@ void render_and_send(String action, String param) {
     message_frame[frame_idx++] = FRAME_DELIMITER;
     if (action.equals("message"))
     {
-      strcpy(current_message, param.c_str());
+      // strcpy(current_message, param.c_str());
       param.concat(" ");
       frame_length = 1; // The length of the message + the action, one byte.
       message_frame[frame_idx++] = frame_length;
@@ -213,7 +213,7 @@ void render_and_send(String action, String param) {
       bool escape_mode = false;
       for (uint8_t i = 0; i < param.length(); i++)
       {
-        LOG_DEBUG_S("%02x ", param[i]);
+        LOG_DEBUG_SF("%02x ", param[i]);
         if (escape_mode)
         {
           uint8_t subst = 0x20;
@@ -239,7 +239,7 @@ void render_and_send(String action, String param) {
           frame_length++;
         }
       }
-      LOG_DEBUG_LN("");
+      LOG_DEBUG_S("\n");
       message_frame[0x01] = frame_length;
       LOG_DEBUG_F("Setting up the datagram. Data length: %02X\n", frame_length);
     }
@@ -369,6 +369,7 @@ void handle_rest_request(AsyncWebServerRequest *request)
     }
     LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s", action.c_str(), param.c_str());
     render_and_send( action, param);
+    strcpy(current_message, param.c_str());
 
     String response;
     LOG_DEBUG_F("Current message %s \n", current_message);

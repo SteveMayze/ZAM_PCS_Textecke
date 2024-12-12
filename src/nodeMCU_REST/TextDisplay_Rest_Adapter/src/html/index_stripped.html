@@ -1,136 +1,56 @@
-"<!DOCTYPE html>\
-<html>\
-<head>\
-<title>ZAM Textecke</title>\
-<style>\
-h1 {\
-font-family: Arial, Helvetica, sans-serif;\
-font-size: 32pt;\
-text-align: center;\
-background-color: #ffffff;\
-color: rgb(12, 172, 172);\
-}\
-input.text_input {\
-width: 95%;\
-}\
-div.marquee {\
-background-color: #000000;\
-color: #FFFFFF;\
-padding-left: 15px;\
-padding-right: 15px;\
-padding-top: 0px;\
-padding-bottom: 0px;\
-font-size: 32pt;\
-}\
-div.input_field {\
-padding-top: 10px;\
-padding-bottom: 10px;\
-}\
-.input_button {\
-padding-left: 10px;\
-padding-right: 10px;\
-}\
-div.input_form {\
-font-family: Arial, Helvetica, sans-serif;\
-padding: 15px;\
-}\
-p {\
--moz-animation: marquee 15s linear infinite;\
--webkit-animation: marquee 15s linear infinite;\
-animation: marquee 15s linear infinite;\
-padding-left: 15px;\
-padding-right: 15px;\
-}\
-@-moz-keyframes marquee {\
-0% {\
-transform: translateX(100%);\
-}\
-100% {\
-transform: translateX(-100%);\
-}\
-}\
-@-webkit-keyframes marquee {\
-0% {\
-transform: translateX(100%);\
-}\
-100% {\
-transform: translateX(-100%);\
-}\
-}\
-@keyframes marquee {\
-0% {\
--moz-transform: translateX(100%);\
--webkit-transform: translateX(100%);\
-transform: translateX(100%)\
-}\
-100% {\
--moz-transform: translateX(-100%);\
--webkit-transform: translateX(-100%);\
-transform: translateX(-100%);\
-}\
-}\
-</style>\
-</head>\
-<body>\
-<div class=\"header\">\
-<h1>ZAM Textecke</h1>\
-</div>\
-<div id=\"marquee_panel\" class=\"marquee\">\
-<p>{MESAGE_TOKEN}</p>\
-</div>\
-<div class=\"input_form\">\
-<form id=\"message-form\" method=\"POST\" action=\"/textecke/\">\
-<fieldset>\
-<legend>Nachrict</legend>\
-<div class=\"input_field\">\
-<label for=\"message-input\">Text eingeben:</label>\
-<input id=\"message-input\" name=\"message\" placeholder=\"Enter some text\" maxlength=\"200\"\
-class=\"text_input\" />\
-</div>\
-<div class=\"input_field\">\
-<label for=\"background-select\">Hintergrund:</label>\
-<select id=\"background-select\" onchange=\"changeBackColor(this);\" name=\"background\">\
-<option id=\"back_black\" value=\"BLACK\" selected>black</option>\
-<option id=\"back_red\" value=\"RED\">red</option>\
-<option id=\"back_orange\" value=\"ORANGE\">orange</option>\
-<option id=\"back_yellow\" value=\"YELLOW\">yellow</option>\
-<option id=\"back_green\" value=\"GREEN\">green</option>\
-<option id=\"back_blue\" value=\"BLUE\">blue</option>\
-<option id=\"back_violet\" value=\"VIOLET\">violet</option>\
-<option id=\"back_white\" value=\"WHITE\">white</option>\
-</select>\
-</div>\
-<div class=\"input_field\">\
-<label for=\"forground-select\">Voredergrund:</label>\
-<select id=\"foreground-select\" onchange=\"changeForeColor(this);\" name=\"foreground\">\
-<option id=\"fore_black\" value=\"BLACK\" >black</option>\
-<option id=\"fore_red\" value=\"RED\">red</option>\
-<option id=\"fore_orange\" value=\"ORANGE\">orange</option>\
-<option id=\"fore_yellow\" value=\"YELLOW\">yellow</option>\
-<option id=\"fore_green\" value=\"GREEN\">green</option>\
-<option id=\"fore_blue\" value=\"BLUE\">blue</option>\
-<option id=\"fore_violet\" value=\"VIOLET\">violet</option>\
-<option id=\"fore_white\" value=\"WHITE\" selected>white</option>\
-</select>\
-</div>\
-</fieldset>\
-<div class=\"input_field\">\
-<button type=\"reset\" value=\"DEFAULT\" class=\"input_button\">zurucksetzen</button>\
-<button value=\"OK\" class=\"input_button\">OK</button>\
-</div>\
-</form>\
-</div>\
-<script>\
-function changeBackColor(colorParam) {\
-let color = colorParam.value.toLowerCase();\
-var optionElement = document.getElementById(\"marquee_panel\");\
-optionElement.style.backgroundColor = color;\
-};    \
-function changeForeColor(colorParam) {\
-let color = colorParam.value.toLowerCase();\
-var optionElement = document.getElementById(\"marquee_panel\");\
-optionElement.style.color = color;\
-};    \
-</script>\
-</body>\
-</html>";
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=utf-8>
+<meta http-equiv=X-UA-Compatible content="IE=edge">
+<title>ZAM Textecke</title>
+<meta name=description content>
+<meta name=viewport content="width=device-width, initial-scale=1">
+<link rel=stylesheet type=text/css href=style.css>
+</head>
+<body>
+<div class=header>
+<table width=80%>
+<tr>
+<td colspan=1>
+<img src=ZAM_ot-Logo-wt.png width=128 height="64"/>
+</td>
+<td colspan=5>
+<h1>Textecke</h1>
+</td>
+</tr>
+</table>
+</div>
+<div id=marquee_panel class=marquee>
+<p>$MESAGE_TOKEN$</p>
+</div>
+<div class=input_form>
+<form id=message-form name=message-form onsubmit="return validateForm()" method=POST action=/textecke>
+<fieldset>
+<legend>Nachrict</legend>
+<div class=input_field>
+<label for=message-input>Text eingeben:</label>
+<input id=message-input name=message placeholder="Enter some text" maxlength=200 class=text_input />
+</div>
+<div class=input_field>
+<label for=background-select>Hintergrund:</label>
+<select id=background-select onchange=changeBackColor(this) name=background>
+$BACKGROUND_OPTION_TOKEN$
+</select>
+</div>
+<div class=input_field>
+<label for=forground-select>Voredergrund:</label>
+<select id=foreground-select onchange=changeForeColor(this) name=foreground>
+$FOREGROUND_OPTION_TOKEN$
+</select>
+</div>
+</fieldset>
+<div class=input_field>
+<button type=reset value=DEFAULT class=input_button>zurucksetzen</button>
+<button value=OK class=input_button>OK</button>
+</div>
+</form>
+</div>
+<script>function changeBackColor(b){let color=b.value.toLowerCase();var a=document.getElementById("marquee_panel");a.style.backgroundColor=color}function changeForeColor(b){let color=b.value.toLowerCase();var a=document.getElementById("marquee_panel");a.style.color=color}function validateForm(){if(document.forms["message-form"]["message"].length>200){return false;alert("Die Nachricht ist zu lang. Das Limit beträgt 200 Zeichen.")}return true};</script>
+</body>
+</html>
