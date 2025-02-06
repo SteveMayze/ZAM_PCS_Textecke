@@ -38,13 +38,26 @@
                 <div class="input_field">
                     <label for="background-select">Hintergrund:</label>
                     <select id="background-select" onchange="changeBackColor(this);" name="background">
-                        $BACKGROUND_OPTION_TOKEN$
-                    </select>
+                        <option id="back_black" value="BLACK" $BOT_BLACK$>black</option>
+                        <option id="back_red" value="RED"  $BOT_RED$>red</option>
+                        <option id="back_orange" value="ORANGE"  $BOT_ORANGE$>orange</option>
+                        <option id="back_yellow" value="YELLOW"  $BOT_YELLOW$>yellow</option>
+                        <option id="back_green" value="GREEN"  $BOT_GREEN$>green</option>
+                        <option id="back_blue" value="BLUE" $BOT_BLUE$ >blue</option>
+                        <option id="back_violet" value="VIOLET"  $BOT_VIOLET$>violet</option>
+                        <option id="back_white" value="WHITE"  $BOT_WHITE$>white</option>                    </select>
                 </div>
                 <div class="input_field">
                     <label for="forground-select">Voredergrund:</label>
                     <select id="foreground-select" onchange="changeForeColor(this);" name="foreground">
-                        $FOREGROUND_OPTION_TOKEN$
+                        <option id="back_black" value="BLACK" $FOT_BLACK$>black</option>
+                        <option id="back_red" value="RED"  $FOT_RED$>red</option>
+                        <option id="back_orange" value="ORANGE"  $FOT_ORANGE$>orange</option>
+                        <option id="back_yellow" value="YELLOW"  $FOT_YELLOW$>yellow</option>
+                        <option id="back_green" value="GREEN"  $FOT_GREEN$>green</option>
+                        <option id="back_blue" value="BLUE" $FOT_BLUE$ >blue</option>
+                        <option id="back_violet" value="VIOLET"  $FOT_VIOLET$>violet</option>
+                        <option id="back_white" value="WHITE"  $FOT_WHITE$>white</option>                    </select>
                     </select>
                 </div>
             </fieldset>

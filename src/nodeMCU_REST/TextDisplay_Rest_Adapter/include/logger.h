@@ -15,7 +15,13 @@
 #define LOGGER_LEVEL_DEBUG 4
 #define LOGGER_LEVEL_ALL 7
 
-#define LOGGER_LEVEL LOGGER_LEVEL_INFO
+#define LOGGER_LEVEL LOGGER_LEVEL_OFF
+
+#if LOGGER_LEVEL != LOGGER_LEVEL_OFF
+    #define LOG_INIT(baud) { Serial.begin(baud); delay(100);}
+#else
+    #define LOG_INIT(baud)
+#endif
 
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_OFF
     #define LOG_ERROR(args...) { Serial.print("ERROR: "); Serial.print(args); }
