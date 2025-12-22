@@ -77,6 +77,65 @@ uint8_t calc_checksum(uint8_t message[], uint8_t length)
   return checksum;
 }
 
+// Log a truncated hex representation of a frame: header, truncated payload, checksum
+static void log_truncated_frame(const uint8_t *message_frame, size_t payload_len)
+{
+  const size_t MAX_PAYLOAD_PRINT = 32;
+  char hexbuf[3 * 96];
+  size_t off = 0;
+  // header bytes (delimiter and length)
+  for (size_t i = 0; i < 2 && off < sizeof(hexbuf) - 4; ++i)
+  {
+    int n = snprintf(hexbuf + off, sizeof(hexbuf) - off, "%02X ", message_frame[i]);
+    if (n > 0)
+      off += (size_t)n;
+  }
+
+  if (payload_len <= MAX_PAYLOAD_PRINT)
+  {
+    for (size_t i = 0; i < payload_len && off < sizeof(hexbuf) - 4; ++i)
+    {
+      int n = snprintf(hexbuf + off, sizeof(hexbuf) - off, "%02X ", message_frame[2 + i]);
+      if (n > 0)
+        off += (size_t)n;
+    }
+  }
+  else
+  {
+    size_t first = MAX_PAYLOAD_PRINT / 2;
+    size_t last = MAX_PAYLOAD_PRINT - first;
+    for (size_t i = 0; i < first && off < sizeof(hexbuf) - 4; ++i)
+    {
+      int n = snprintf(hexbuf + off, sizeof(hexbuf) - off, "%02X ", message_frame[2 + i]);
+      if (n > 0)
+        off += (size_t)n;
+    }
+    int n = snprintf(hexbuf + off, sizeof(hexbuf) - off, "...(%u bytes omitted)... ", (unsigned)(payload_len - first - last));
+    if (n > 0)
+      off += (size_t)n;
+    for (size_t i = 0; i < last && off < sizeof(hexbuf) - 4; ++i)
+    {
+      int m = snprintf(hexbuf + off, sizeof(hexbuf) - off, "%02X ", message_frame[2 + payload_len - last + i]);
+      if (m > 0)
+        off += (size_t)m;
+    }
+  }
+
+  // append checksum (last byte)
+  if (off < sizeof(hexbuf) - 4)
+  {
+    int n = snprintf(hexbuf + off, sizeof(hexbuf) - off, "%02X", message_frame[2 + payload_len]);
+    if (n > 0)
+      off += (size_t)n;
+  }
+  if (off >= sizeof(hexbuf))
+    hexbuf[sizeof(hexbuf) - 1] = '\0';
+  else
+    hexbuf[off] = '\0';
+  LOG_DEBUG_F("Frame (truncated): %s\n", hexbuf);
+}
+
+
 
 uint8_t get_colour_byte(String colour_name){
   uint8_t colour_byte = -1;
@@ -292,13 +351,10 @@ void render_and_send(const char* action, const char *param) {
 
     uint8_t checksum = calc_checksum(&message_frame[2], frame_length);
     message_frame[frame_idx++] = checksum;
-    LOG_BYTE_STREAM("Frame: ",  message_frame, frame_length);
-    // Remove the comment from the following block to enable full frame logging
-    // for (uint8_t i = 0; i < frame_length + 3; i++)
-    // {
-    //   LOG_DEBUG_SF("%02X ", message_frame[i]);
-    // }
-    // LOG_DEBUG_LN("");
+
+    // Diagnostic: print a truncated hex dump of the frame to avoid blocking Serial
+    log_truncated_frame(message_frame, frame_length);
+
     Serial1.write(message_frame, frame_length + 3);
 }
 

@@ -16,3 +16,5 @@ Files changed (high level):
 Notes:
 - Confirm serial monitor is set to 115200 after flashing.
 - If you want me to commit these changes to git now, I will run `git add .` and `git commit` in the project folder.
+
+- Commit: Staged and committed `src/main.cpp` and `CHANGELOG.md` with final safe-string handling and logging/truncation updates.
