@@ -15,7 +15,7 @@
 #define LOGGER_LEVEL_DEBUG 4
 #define LOGGER_LEVEL_ALL 7
 
-#define LOGGER_LEVEL LOGGER_LEVEL_OFF
+#define LOGGER_LEVEL LOGGER_LEVEL_ALL
 
 #if LOGGER_LEVEL != LOGGER_LEVEL_OFF
     #define LOG_INIT(baud) { Serial.begin(baud); delay(100);}
@@ -74,13 +74,8 @@
 
     
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_INFO
-    #define LOG_BYTE_STREAM(prefix, byte_stream, stream_size) { \
-        LOG_INFO(prefix);                                       \
-        for(int idx = 0; idx<stream_size; idx++) {              \
-            Serial.printf("%02X ", byte_stream[idx]);           \
-        }                                                       \
-        Serial.print("\n");                                     \
-    } 
+    // Temporarily disable heavy byte stream logging to avoid instability during debugging
+    #define LOG_BYTE_STREAM(prefix, byte_stream, stream_size)
     #else
         #define LOG_BYTE_STREAM(prefix, byte_stream, stream_size)
     #endif

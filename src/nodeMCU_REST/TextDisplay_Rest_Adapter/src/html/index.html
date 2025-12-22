@@ -7,7 +7,7 @@
     <title>ZAM Textecke</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="style.min.css">
 </head>
 
 <body>
@@ -24,7 +24,7 @@
         </table>
     </div>
     <div id="marquee_panel" class="marquee">
-        <p>$MESAGE_TOKEN$</p>
+        <p>$MESSAGE_TOKEN$</p>
     </div>
     <div class="input_form">
         <form id="message-form" name="message-form" onsubmit="return validateForm()" method="POST" action="/textecke">
@@ -34,36 +34,39 @@
                     <label for="message-input">Text eingeben:</label>
                     <input id="message-input" name="message" placeholder="Enter some text" maxlength="200"
                         class="text_input" />
+                    <span id="message-length" style="margin-left:8px;color:#666;font-size:0.9em">0/200</span>
+                    <div id="message-error" style="color:#c00;font-size:0.9em;margin-top:4px;display:none">Die Nachricht ist zu lang. Das Limit beträgt 200 Zeichen.</div>
                 </div>
                 <div class="input_field">
                     <label for="background-select">Hintergrund:</label>
                     <select id="background-select" onchange="changeBackColor(this);" name="background">
-                        <option id="back_black" value="BLACK" $BOT_BLACK$>black</option>
-                        <option id="back_red" value="RED"  $BOT_RED$>red</option>
-                        <option id="back_orange" value="ORANGE"  $BOT_ORANGE$>orange</option>
-                        <option id="back_yellow" value="YELLOW"  $BOT_YELLOW$>yellow</option>
-                        <option id="back_green" value="GREEN"  $BOT_GREEN$>green</option>
-                        <option id="back_blue" value="BLUE" $BOT_BLUE$ >blue</option>
-                        <option id="back_violet" value="VIOLET"  $BOT_VIOLET$>violet</option>
-                        <option id="back_white" value="WHITE"  $BOT_WHITE$>white</option>                    </select>
+                        <option id="back_black" value="black" $BOT_BLACK$>black</option>
+                        <option id="back_red" value="red"  $BOT_RED$>red</option>
+                        <option id="back_orange" value="orange"  $BOT_ORANGE$>orange</option>
+                        <option id="back_yellow" value="yellow"  $BOT_YELLOW$>yellow</option>
+                        <option id="back_green" value="green"  $BOT_GREEN$>green</option>
+                        <option id="back_blue" value="blue" $BOT_BLUE$ >blue</option>
+                        <option id="back_violet" value="violet"  $BOT_VIOLET$>violet</option>
+                        <option id="back_white" value="white"  $BOT_WHITE$>white</option>                    
+                    </select>
                 </div>
                 <div class="input_field">
                     <label for="forground-select">Voredergrund:</label>
                     <select id="foreground-select" onchange="changeForeColor(this);" name="foreground">
-                        <option id="back_black" value="BLACK" $FOT_BLACK$>black</option>
-                        <option id="back_red" value="RED"  $FOT_RED$>red</option>
-                        <option id="back_orange" value="ORANGE"  $FOT_ORANGE$>orange</option>
-                        <option id="back_yellow" value="YELLOW"  $FOT_YELLOW$>yellow</option>
-                        <option id="back_green" value="GREEN"  $FOT_GREEN$>green</option>
-                        <option id="back_blue" value="BLUE" $FOT_BLUE$ >blue</option>
-                        <option id="back_violet" value="VIOLET"  $FOT_VIOLET$>violet</option>
-                        <option id="back_white" value="WHITE"  $FOT_WHITE$>white</option>                    </select>
+                        <option id="back_black" value="black" $FOT_BLACK$>black</option>
+                        <option id="back_red" value="red"  $FOT_RED$>red</option>
+                        <option id="back_orange" value="orange"  $FOT_ORANGE$>orange</option>
+                        <option id="back_yellow" value="yellow"  $FOT_YELLOW$>yellow</option>
+                        <option id="back_green" value="green"  $FOT_GREEN$>green</option>
+                        <option id="back_blue" value="blue" $FOT_BLUE$ >blue</option>
+                        <option id="back_violet" value="violet"  $FOT_VIOLET$>violet</option>
+                        <option id="back_white" value="white"  $FOT_WHITE$>white</option>
                     </select>
                 </div>
             </fieldset>
             <div class="input_field">
                 <button type="reset" value="DEFAULT" class="input_button">zurucksetzen</button>
-                <button value="OK" class="input_button">OK</button>
+                <button type="submit" value="OK" class="input_button">OK</button>
             </div>
         </form>
     </div>
@@ -79,12 +82,70 @@
             optionElement.style.color = color;
         };
         function validateForm() {
-            if (document.forms["message-form"]["message"].length > 200){
+            var msg = document.getElementById("message-input").value || "";
+            var errEl = document.getElementById('message-error');
+            if (msg.length > 200) {
+                if (errEl) { errEl.style.display = 'block'; }
                 return false;
-                alert("Die Nachricht ist zu lang. Das Limit beträgt 200 Zeichen.")
             }
+            if (errEl) { errEl.style.display = 'none'; }
             return true;
         }
+
+        // Extra guard: attach submit listener to ensure prevention works across browsers
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('message-form');
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    var msg = document.getElementById('message-input').value || '';
+                    var errEl = document.getElementById('message-error');
+                    if (msg.length > 200) {
+                        e.preventDefault();
+                        if (errEl) { errEl.style.display = 'block'; }
+                        return false;
+                    }
+                    if (errEl) { errEl.style.display = 'none'; }
+                    return true;
+                });
+            }
+
+            // live character count and visual indicator
+            var msgInput = document.getElementById('message-input');
+            var lenIndicator = document.getElementById('message-length');
+            if (msgInput) {
+                msgInput.addEventListener('input', function () {
+                    var len = this.value.length;
+                    var errEl = document.getElementById('message-error');
+                    if (len > 200) {
+                        this.style.border = '2px solid red';
+                        if (lenIndicator) { lenIndicator.textContent = len + '/200 (zu lang)'; lenIndicator.style.color = 'red'; }
+                        if (errEl) { errEl.style.display = 'block'; }
+                    } else {
+                        this.style.border = '';
+                        if (lenIndicator) { lenIndicator.textContent = len + '/200'; lenIndicator.style.color = '#666'; }
+                        if (errEl) { errEl.style.display = 'none'; }
+                    }
+                });
+                // initialize indicator
+                (function () { var ev = new Event('input'); msgInput.dispatchEvent(ev); })();
+            }
+        });
+
+        // Protect against programmatic submission via form.submit()
+        (function () {
+            var origSubmit = HTMLFormElement.prototype.submit;
+            HTMLFormElement.prototype.submit = function () {
+                try {
+                    var msgEl = this.querySelector('#message-input');
+                    var msg = msgEl ? (msgEl.value || '') : '';
+                    if (msg.length > 200) {
+                        alert('Die Nachricht ist zu lang. Das Limit beträgt 200 Zeichen.');
+                        return;
+                    }
+                } catch (e) {}
+                return origSubmit.apply(this, arguments);
+            };
+        })();
     </script>
 </body>
 
