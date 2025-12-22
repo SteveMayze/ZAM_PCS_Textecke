@@ -15,18 +15,28 @@
 #define LOGGER_LEVEL_DEBUG 4
 #define LOGGER_LEVEL_ALL 7
 
-#define LOGGER_LEVEL LOGGER_LEVEL_INFO
+#define LOGGER_LEVEL LOGGER_LEVEL_ALL
+
+#if LOGGER_LEVEL != LOGGER_LEVEL_OFF
+    #define LOG_INIT(baud) { Serial.begin(baud); delay(100);}
+#else
+    #define LOG_INIT(baud)
+#endif
 
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_OFF
     #define LOG_ERROR(args...) { Serial.print("ERROR: "); Serial.print(args); }
     #define LOG_ERROR_F(args...) { Serial.print("ERROR: "); Serial.printf(args); }
     #define LOG_ERROR_LN(args...) { Serial.print("ERROR: "); Serial.println(args); }
     #define LOG_ERROR_S(args...){  Serial.print(args); }
+    #define LOG_ERROR_SF(args...){  Serial.printf(args); }
+    #define LOG_ERROR_SLN(args...){  Serial.println(args); }
 #else
     #define LOG_ERROR(args...)
     #define LOG_ERROR_F(args...)
     #define LOG_ERROR_LN(args...)
     #define LOG_ERROR_S(args...)
+    #define LOG_ERROR_SF(args...)
+    #define LOG_ERROR_SLN(args...)
 #endif
 
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_ERROR
@@ -34,11 +44,15 @@
     #define LOG_INFO_F(args...) { Serial.print("INFO: "); Serial.printf(args); }
     #define LOG_INFO_LN(args...) { Serial.print("INFO: "); Serial.println(args); }
     #define LOG_INFO_S(args...){  Serial.print(args); }
+    #define LOG_INFO_SF(args...){  Serial.printf(args); }
+    #define LOG_INFO_SLN(args...){  Serial.println(args); }
 #else
     #define LOG_INFO(args...) 
     #define LOG_INFO_F(args...) 
     #define LOG_INFO_LN(args...) 
     #define LOG_INFO_S(args...)
+    #define LOG_INFO_SF(args...)
+    #define LOG_INFO_SLN(args...)
 #endif
 
 
@@ -47,30 +61,29 @@
     #define LOG_DEBUG_F(args...) { Serial.print("DEBUG: "); Serial.printf(args); }
     #define LOG_DEBUG_LN(args...) { Serial.print("DEBUG: "); Serial.println(args); }
     #define LOG_DEBUG_S(args...){  Serial.print(args); }
+    #define LOG_DEBUG_SF(args...){  Serial.printf(args); }
+    #define LOG_DEBUG_SLN(args...){  Serial.println(args); }
 #else
     #define LOG_DEBUG(args...) 
     #define LOG_DEBUG_F(args...) 
     #define LOG_DEBUG_LN(args...) 
     #define LOG_DEBUG_S(args...)
+    #define LOG_DEBUG_SF(args...)
+    #define LOG_DEBUG_SLN(args...)
 #endif
 
     
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_INFO
-    #define LOG_BYTE_STREAM(prefix, byte_stream, stream_size) { \
-        LOG_INFO(prefix);                                       \
-        for(int idx = 0; idx<stream_size; idx++) {              \
-            Serial.printf("%02X ", byte_stream[idx]);           \
-        }                                                       \
-        Serial.print("\n");                                     \
-    } 
+    // Temporarily disable heavy byte stream logging to avoid instability during debugging
+    #define LOG_BYTE_STREAM(prefix, byte_stream, stream_size)
     #else
         #define LOG_BYTE_STREAM(prefix, byte_stream, stream_size)
     #endif
 
     
 #if defined(LOGGER_LEVEL) && LOGGER_LEVEL > LOGGER_LEVEL_ERROR
-    #define LOG_BIT_STREAM(value, bits) {      \
-        int v = value, num_places = bits, mask = 0, n;                                            \
+    #define LOG_BIT_STREAM(value, bits) {                           \
+        int v = value, num_places = bits, mask = 0, n;              \
         for (n = 1; n <= num_places; n++)                           \
         {                                                           \
             mask = (mask << 1) | 0x0001;                            \
