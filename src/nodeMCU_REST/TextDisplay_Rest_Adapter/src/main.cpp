@@ -2,15 +2,18 @@
 #include <Arduino.h>
 #include "secrets.h"
 
-// #define TEMPLATE_PLACEHOLDER 'Ω'
 #define TEMPLATE_PLACEHOLDER '$'
 
-#ifdef ESP32
+#if defined(TEXTECKE_ESP32)
   #include <WiFi.h>
   #include <AsyncTCP.h>
-#elif defined(ESP8266)
+  HardwareSerial TextDisplaySerial(2); // UART1 on ESP32
+#elif defined(TEXTECKE_ESP8266)
   #include <ESP8266WiFi.h>
   #include <ESPAsyncTCP.h>
+  HardwareSerial TextDisplaySerial = Serial1; // UART0 on ESP32
+#else
+  #error "Please define either TEXTECKE_ESP32 or TEXTECKE_ESP8266"
 #endif
 
 #include "AsyncJson.h"
@@ -355,7 +358,7 @@ void render_and_send(const char* action, const char *param) {
     // Diagnostic: print a truncated hex dump of the frame to avoid blocking Serial
     log_truncated_frame(message_frame, frame_length);
 
-    Serial1.write(message_frame, frame_length + 3);
+    TextDisplaySerial.write(message_frame, frame_length + 3);
 }
 
 
@@ -482,7 +485,7 @@ void setup()
 {
 
   LOG_INIT(115200);
-  Serial1.begin(9600);
+  TextDisplaySerial.begin(9600);
   delay(100);
  
   LOG_DEBUG_F("Connecting to %s \n", ssid);
