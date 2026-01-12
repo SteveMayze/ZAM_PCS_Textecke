@@ -529,13 +529,13 @@ void setup()
                     request->send(LittleFS, "/index.min.html", String(), false, html_processor); 
                   });
 
-    server.on("/style.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
+    server.on("/res/style.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
                   { 
-                    request->send(LittleFS, "/style.min.css", String(), false, css_processor); 
+                    request->send(LittleFS, "/res/style.min.css", String(), false, css_processor); 
                   });
 
-    server.on("/ZAM_ot-Logo-wt.png", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { request->send(LittleFS, "/ZAM_ot-Logo-wt.png", "image/png"); });
+    server.on("/res/ZAM_ot-Logo-wt.png", HTTP_GET, [](AsyncWebServerRequest *request)
+                  { request->send(LittleFS, "/res/ZAM_ot-Logo-wt.png", "image/png"); });
 
     server.on("/textecke", HTTP_POST, handle_post_form_request);
 
