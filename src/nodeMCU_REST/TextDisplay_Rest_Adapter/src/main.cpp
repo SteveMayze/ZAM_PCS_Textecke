@@ -19,6 +19,8 @@
 #include "AsyncJson.h"
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
+#include <map>
+#include <string>
 #include "LittleFS.h"
 #include <Wire.h>
 #include "logger.h"
@@ -53,6 +55,9 @@ char foreground[16] = "white";
 char background[16] = "black";
 
 AsyncWebServer server(80);
+
+// Buffer POST bodies per-request (used by the explicit HTTP_POST handler)
+std::map<AsyncWebServerRequest *, std::string> postBodyBuffer;
 
 #define SPECIAL_CHAR 8
 uint8_t charmap[SPECIAL_CHAR][2] = {
@@ -429,37 +434,85 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
 {
   LOG_DEBUG_LN("Received REST POST request");
     String result = "";
-
-    String action = docVar["action"];
-    String param = docVar["param"];
-    if ( action.equals("message")){
-      if(param.length() > MESSAGE_SIZE){
-          LOG_DEBUG_F("handle_rest_request: The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
-          param = param.substring(0, MESSAGE_SIZE);
-          param.concat("...");
+    // Support new-style payloads: { "text": "..." }
+    if (docVar.containsKey("text") && docVar["text"].is<const char*>()) {
+      String param = String(docVar["text"].as<const char*>());
+      if (param.length() > MESSAGE_SIZE) {
+        LOG_DEBUG_F("handle_rest_request: The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
+        param = param.substring(0, MESSAGE_SIZE);
+        param.concat("...");
       }
-      LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s", action.c_str(), param.c_str());
+      LOG_DEBUG_F("handle_rest_request: Calling render and send for message, param: %s", param.c_str());
       memset(new_message, 0x00, MESSAGE_BUFFER_SIZE);
-      // Copy safely from String into fixed buffer
       param.toCharArray(new_message, MESSAGE_BUFFER_SIZE);
       LOG_DEBUG_F("handle_rest_request: freeHeap before render: %u\n", ESP.getFreeHeap());
-      // copy into current_message safely and render
       memset(current_message, 0x00, MESSAGE_BUFFER_SIZE);
       strncpy(current_message, new_message, MESSAGE_BUFFER_SIZE - 1);
       current_message[MESSAGE_BUFFER_SIZE - 1] = '\0';
-      render_and_send(action.c_str(), current_message);
+      render_and_send("message", current_message);
       LOG_DEBUG_F("handle_rest_request: freeHeap after render: %u\n", ESP.getFreeHeap());
     } else {
-      LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s. Existing fg: %s, bg: %s \n", 
-        action.c_str(), param.c_str(), foreground, background);
-      if (param.startsWith(":")){
-        String tmpstr = String(foreground);
-        tmpstr.concat(param);
-        LOG_DEBUG_F("Colour code to be passed to render_and_send %s \n", tmpstr.c_str());
-        render_and_send(action.c_str(), tmpstr.c_str());
+      // New-style colour fields: handle fg/bg alongside legacy action/param
+      bool hasFgField = docVar.containsKey("fg") && docVar["fg"].is<const char*>();
+      bool hasBgField = docVar.containsKey("bg") && docVar["bg"].is<const char*>();
+      if (hasFgField || hasBgField) {
+        if (hasFgField) {
+          const char *fg = docVar["fg"].as<const char *>();
+          if (strlen(fg) >= sizeof(foreground)) {
+            request->send(413, "application/json; charset=utf-8", "{\"error\":\"'fg' too long\"}");
+            return;
+          }
+          strncpy(foreground, fg, sizeof(foreground)-1);
+          foreground[sizeof(foreground)-1] = '\0';
+        }
+        if (hasBgField) {
+          const char *bg = docVar["bg"].as<const char *>();
+          if (strlen(bg) >= sizeof(background)) {
+            request->send(413, "application/json; charset=utf-8", "{\"error\":\"'bg' too long\"}");
+            return;
+          }
+          strncpy(background, bg, sizeof(background)-1);
+          background[sizeof(background)-1] = '\0';
+        }
+        String temp = String(foreground);
+        temp.concat(":");
+        temp.concat(background);
+        LOG_DEBUG_F("handle_rest_request: Applying colours %s\n", temp.c_str());
+        render_and_send("colour", temp.c_str());
+      }
+
+      // Fallback: legacy format { "action": "xxx", "param": "yyy" }
+      String action = docVar["action"];
+      String param = docVar["param"];
+      if ( action.equals("message")){
+        if(param.length() > MESSAGE_SIZE){
+            LOG_DEBUG_F("handle_rest_request: The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
+            param = param.substring(0, MESSAGE_SIZE);
+            param.concat("...");
+        }
+        LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s", action.c_str(), param.c_str());
+        memset(new_message, 0x00, MESSAGE_BUFFER_SIZE);
+        // Copy safely from String into fixed buffer
+        param.toCharArray(new_message, MESSAGE_BUFFER_SIZE);
+        LOG_DEBUG_F("handle_rest_request: freeHeap before render: %u\n", ESP.getFreeHeap());
+        // copy into current_message safely and render
+        memset(current_message, 0x00, MESSAGE_BUFFER_SIZE);
+        strncpy(current_message, new_message, MESSAGE_BUFFER_SIZE - 1);
+        current_message[MESSAGE_BUFFER_SIZE - 1] = '\0';
+        render_and_send(action.c_str(), current_message);
+        LOG_DEBUG_F("handle_rest_request: freeHeap after render: %u\n", ESP.getFreeHeap());
       } else {
-        LOG_DEBUG_F("Colour code to be passed to render_and_send %s \n", param.c_str());
-        render_and_send(action.c_str(), param.c_str());
+        LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s. Existing fg: %s, bg: %s \n", 
+          action.c_str(), param.c_str(), foreground, background);
+        if (param.startsWith(":")){
+          String tmpstr = String(foreground);
+          tmpstr.concat(param);
+          LOG_DEBUG_F("Colour code to be passed to render_and_send %s \n", tmpstr.c_str());
+          render_and_send(action.c_str(), tmpstr.c_str());
+        } else {
+          LOG_DEBUG_F("Colour code to be passed to render_and_send %s \n", param.c_str());
+          render_and_send(action.c_str(), param.c_str());
+        }
       }
     }
 
@@ -515,14 +568,116 @@ void setup()
   }
  
   // -- REST
-  // server.on("/api/v1/message", HTTP_POST, handle_rest_request);
-  AsyncCallbackJsonWebHandler *handle_json = new AsyncCallbackJsonWebHandler("/api/v1/message", [](AsyncWebServerRequest *request, JsonVariant &json) {
-    // Pass the parsed JsonVariant directly to the request handler to avoid
-    // holding a large static JsonDocument in RAM.
-    handle_rest_request(request, json);
-    }); 
+  // POST endpoint: accept JSON body and call handle_rest_request
+  server.on("/api/v1/message", HTTP_POST,
+    [](AsyncWebServerRequest *request) {
+      // onRequest - response is handled after body is parsed in onBody
+    },
+    NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+      std::string &buf = postBodyBuffer[request];
+      if (index == 0) buf.clear();
+      buf.append((const char *)data, len);
+      if (index + len == total) {
+        DynamicJsonDocument doc(1024);
+        DeserializationError err = deserializeJson(doc, buf.c_str(), buf.size());
+        if (err) {
+          request->send(400, "application/json; charset=utf-8", "{\"error\":\"Invalid JSON\"}");
+        } else {
+          // Validate presence and byte-length of 'text' (max 200 bytes)
+          if (!doc.containsKey("text") || !doc["text"].is<const char*>()) {
+            request->send(400, "application/json; charset=utf-8", "{\"error\":\"Missing or invalid 'text' field\"}");
+          } else {
+            const char *txt = doc["text"].as<const char *>();
+            size_t txt_len = strlen(txt); // bytes in UTF-8
+            if (txt_len > 200) {
+              request->send(413, "application/json; charset=utf-8", "{\"error\":\"'text' too long (max 200 bytes)\"}");
+            } else {
+              JsonVariant var = doc.as<JsonVariant>();
+              handle_rest_request(request, var);
+            }
+          }
+        }
+        postBodyBuffer.erase(request);
+      }
+    }
+  );
+    // GET endpoint: return the current message as JSON
+    server.on("/api/v1/message", HTTP_GET, [](AsyncWebServerRequest *request) {
+      String response;
+      DynamicJsonDocument doc(512);
+      doc["message"] = current_message;
+      serializeJson(doc, response);
+      request->send(200, "application/json; charset=utf-8", response);
+    });
 
-    server.addHandler(handle_json);
+    // Colour endpoints
+    // POST /api/v1/colour - accept JSON with at least one of 'fg' or 'bg'
+    server.on("/api/v1/colour", HTTP_POST,
+      [](AsyncWebServerRequest *request) {
+        // onRequest - response handled in body callback
+      },
+      NULL,
+      [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        std::string &buf = postBodyBuffer[request];
+        if (index == 0) buf.clear();
+        buf.append((const char *)data, len);
+        if (index + len == total) {
+          DynamicJsonDocument doc(512);
+          DeserializationError err = deserializeJson(doc, buf.c_str(), buf.size());
+          if (err) {
+            request->send(400, "application/json; charset=utf-8", "{\"error\":\"Invalid JSON\"}");
+          } else {
+            bool hasFg = doc.containsKey("fg") && doc["fg"].is<const char*>();
+            bool hasBg = doc.containsKey("bg") && doc["bg"].is<const char*>();
+            if (!hasFg && !hasBg) {
+              request->send(400, "application/json; charset=utf-8", "{\"error\":\"Must provide 'fg' or 'bg'\"}");
+            } else {
+              // Validate lengths (max 15 bytes to fit into foreground/background buffers)
+              if (hasFg) {
+                const char *fg = doc["fg"].as<const char *>();
+                if (strlen(fg) >= sizeof(foreground)) {
+                  request->send(413, "application/json; charset=utf-8", "{\"error\":\"'fg' too long (max 15 bytes)\"}");
+                  postBodyBuffer.erase(request);
+                  return;
+                }
+                strncpy(foreground, fg, sizeof(foreground)-1);
+                foreground[sizeof(foreground)-1] = '\0';
+              }
+              if (hasBg) {
+                const char *bg = doc["bg"].as<const char *>();
+                if (strlen(bg) >= sizeof(background)) {
+                  request->send(413, "application/json; charset=utf-8", "{\"error\":\"'bg' too long (max 15 bytes)\"}");
+                  postBodyBuffer.erase(request);
+                  return;
+                }
+                strncpy(background, bg, sizeof(background)-1);
+                background[sizeof(background)-1] = '\0';
+              }
+              // Apply colours to display
+              String tempstr = String(foreground);
+              tempstr.concat(":");
+              tempstr.concat(background);
+              render_and_send("colour", tempstr.c_str());
+              request->send(200, "application/json; charset=utf-8", "{\"status\":\"ok\"}");
+            }
+          }
+          postBodyBuffer.erase(request);
+        }
+      }
+    );
+
+    // GET /api/v1/colour - return current fg/bg
+    server.on("/api/v1/colour", HTTP_GET, [](AsyncWebServerRequest *request) {
+      String response;
+      DynamicJsonDocument doc(256);
+      doc["fg"] = foreground;
+      doc["bg"] = background;
+      serializeJson(doc, response);
+      request->send(200, "application/json; charset=utf-8", response);
+    });
+
+    
     // -- HTTP
     server.on("/textecke", HTTP_GET, [](AsyncWebServerRequest *request)
                   { 
