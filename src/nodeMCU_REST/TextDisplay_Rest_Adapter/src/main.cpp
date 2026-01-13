@@ -19,7 +19,7 @@
 #include "AsyncJson.h"
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
-#include "LITTLEFS.h"
+#include "LittleFS.h"
 #include <Wire.h>
 #include "logger.h"
 
