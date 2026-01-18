@@ -15,7 +15,7 @@
 #define LOGGER_LEVEL_DEBUG 4
 #define LOGGER_LEVEL_ALL 7
 
-#define LOGGER_LEVEL LOGGER_LEVEL_ALL
+// #define LOGGER_LEVEL LOGGER_LEVEL_ALL
 
 #if LOGGER_LEVEL != LOGGER_LEVEL_OFF
     #define LOG_INIT(baud) { Serial.begin(baud); delay(100);}

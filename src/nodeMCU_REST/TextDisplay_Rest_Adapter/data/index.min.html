@@ -1,1 +1,75 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>ZAM Textecke</title><meta name="description" content=""><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" type="text/css" href="/res/style.min.css"></head><body><div class="header"><table width="80%"><tr><td colspan="1"><img src="/res/ZAM_ot-Logo-wt.png" width="128" height="64"></td><td colspan="5"><h1>Textecke</h1></td></tr></table></div><div id="marquee_panel" class="marquee"><p>$MESSAGE_TOKEN$</p></div><div class="input_form"><form id="message-form" name="message-form" onsubmit="return validateForm()" method="POST" action="/textecke"><fieldset><legend>Nachrict</legend><div class="input_field"><label for="message-input">Text eingeben:</label> <input id="message-input" name="message" placeholder="Enter some text" maxlength="200" class="text_input"> <span id="message-length" style="margin-left:8px;color:#666;font-size:.9em">0/200</span><div id="message-error" style="color:#c00;font-size:.9em;margin-top:4px;display:none">Die Nachricht ist zu lang. Das Limit beträgt 200 Zeichen.</div></div><div class="input_field"><label for="background-select">Hintergrund:</label> <select id="background-select" onchange="changeBackColor(this)" name="background"><option id="back_black" value="black" $bot_black$>black</option><option id="back_red" value="red" $bot_red$>red</option><option id="back_orange" value="orange" $bot_orange$>orange</option><option id="back_yellow" value="yellow" $bot_yellow$>yellow</option><option id="back_green" value="green" $bot_green$>green</option><option id="back_blue" value="blue" $bot_blue$>blue</option><option id="back_violet" value="violet" $bot_violet$>violet</option><option id="back_white" value="white" $bot_white$>white</option></select></div><div class="input_field"><label for="forground-select">Voredergrund:</label> <select id="foreground-select" onchange="changeForeColor(this)" name="foreground"><option id="back_black" value="black" $fot_black$>black</option><option id="back_red" value="red" $fot_red$>red</option><option id="back_orange" value="orange" $fot_orange$>orange</option><option id="back_yellow" value="yellow" $fot_yellow$>yellow</option><option id="back_green" value="green" $fot_green$>green</option><option id="back_blue" value="blue" $fot_blue$>blue</option><option id="back_violet" value="violet" $fot_violet$>violet</option><option id="back_white" value="white" $fot_white$>white</option></select></div></fieldset><div class="input_field"><button type="reset" value="DEFAULT" class="input_button">zurucksetzen</button> <button type="submit" value="OK" class="input_button">OK</button></div></form></div><script>function changeBackColor(e){let t=e.value.toLowerCase();e=document.getElementById("marquee_panel");e.style.backgroundColor=t}function changeForeColor(e){let t=e.value.toLowerCase();e=document.getElementById("marquee_panel");e.style.color=t}function validateForm(){var e=document.getElementById("message-input").value||"",t=document.getElementById("message-error");return 200<e.length?(t&&(t.style.display="block"),!1):(t&&(t.style.display="none"),!0)}document.addEventListener("DOMContentLoaded",function(){var e,t=document.getElementById("message-form"),t=(t&&t.addEventListener("submit",function(e){var t=document.getElementById("message-input").value||"",n=document.getElementById("message-error");return 200<t.length?(e.preventDefault(),n&&(n.style.display="block"),!1):(n&&(n.style.display="none"),!0)}),document.getElementById("message-input")),n=document.getElementById("message-length");t&&(t.addEventListener("input",function(){var e=this.value.length,t=document.getElementById("message-error");200<e?(this.style.border="2px solid red",n&&(n.textContent=e+"/200 (zu lang)",n.style.color="red"),t&&(t.style.display="block")):(this.style.border="",n&&(n.textContent=e+"/200",n.style.color="#666"),t&&(t.style.display="none"))}),e=new Event("input"),t.dispatchEvent(e))}),(()=>{var n=HTMLFormElement.prototype.submit;HTMLFormElement.prototype.submit=function(){try{var e=this.querySelector("#message-input"),t=e&&e.value||"";if(200<t.length)return void alert("Die Nachricht ist zu lang. Das Limit beträgt 200 Zeichen.")}catch(e){}return n.apply(this,arguments)}})()</script></body></html>
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>ZAM Textecke</title><meta name="description" content=""><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" type="text/css" href="/res/style.min.css"></head><body><div class="header"><table width="80%"><tr><td colspan="1"><img src="/res/ZAM_ot-Logo-wt.png" width="128" height="64"></td><td colspan="5"><h1>Textecke</h1></td></tr></table></div><div id="marquee_panel" class="marquee"><p>$MESSAGE_TOKEN$</p></div><div class="input_form"><form id="message-form" name="message-form" onsubmit="return validateForm()" method="POST" action="/"><fieldset><legend>Nachrict</legend><div class="input_field"><label for="message-input">Text eingeben:</label> <input id="message-input" name="message" placeholder="Enter some text" maxlength="200" class="text_input"> <span id="message-length" style="margin-left:8px;color:#666;font-size:.9em">0/200</span><div id="message-error" style="color:#c00;font-size:.9em;margin-top:4px;display:none">Die Nachricht ist zu lang. Das Limit beträgt 200 Zeichen.</div></div><div class="input_field"><label for="background-select">Hintergrund:</label> <select id="background-select" onchange="changeBackColor(this)" name="background"><option id="back_black" value="black" $bot_black$>black</option><option id="back_red" value="red" $bot_red$>red</option><option id="back_orange" value="orange" $bot_orange$>orange</option><option id="back_yellow" value="yellow" $bot_yellow$>yellow</option><option id="back_green" value="green" $bot_green$>green</option><option id="back_blue" value="blue" $bot_blue$>blue</option><option id="back_violet" value="violet" $bot_violet$>violet</option><option id="back_white" value="white" $bot_white$>white</option></select></div><div class="input_field"><label for="forground-select">Voredergrund:</label> <select id="foreground-select" onchange="changeForeColor(this)" name="foreground"><option id="back_black" value="black" $fot_black$>black</option><option id="back_red" value="red" $fot_red$>red</option><option id="back_orange" value="orange" $fot_orange$>orange</option><option id="back_yellow" value="yellow" $fot_yellow$>yellow</option><option id="back_green" value="green" $fot_green$>green</option><option id="back_blue" value="blue" $fot_blue$>blue</option><option id="back_violet" value="violet" $fot_violet$>violet</option><option id="back_white" value="white" $fot_white$>white</option></select></div></fieldset><div class="input_field"><button type="reset" value="DEFAULT" class="input_button">zurucksetzen</button> <button type="submit" value="OK" class="input_button">OK</button></div></form></div><script>function changeBackColor(colorParam) {
+            let color = colorParam.value.toLowerCase();
+            var optionElement = document.getElementById("marquee_panel");
+            optionElement.style.backgroundColor = color;
+        };
+        function changeForeColor(colorParam) {
+            let color = colorParam.value.toLowerCase();
+            var optionElement = document.getElementById("marquee_panel");
+            optionElement.style.color = color;
+        };
+        function validateForm() {
+            var msg = document.getElementById("message-input").value || "";
+            var errEl = document.getElementById('message-error');
+            if (msg.length > 200) {
+                if (errEl) { errEl.style.display = 'block'; }
+                return false;
+            }
+            if (errEl) { errEl.style.display = 'none'; }
+            return true;
+        }
+
+        // Extra guard: attach submit listener to ensure prevention works across browsers
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = document.getElementById('message-form');
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    var msg = document.getElementById('message-input').value || '';
+                    var errEl = document.getElementById('message-error');
+                    if (msg.length > 200) {
+                        e.preventDefault();
+                        if (errEl) { errEl.style.display = 'block'; }
+                        return false;
+                    }
+                    if (errEl) { errEl.style.display = 'none'; }
+                    return true;
+                });
+            }
+
+            // live character count and visual indicator
+            var msgInput = document.getElementById('message-input');
+            var lenIndicator = document.getElementById('message-length');
+            if (msgInput) {
+                msgInput.addEventListener('input', function () {
+                    var len = this.value.length;
+                    var errEl = document.getElementById('message-error');
+                    if (len > 200) {
+                        this.style.border = '2px solid red';
+                        if (lenIndicator) { lenIndicator.textContent = len + '/200 (zu lang)'; lenIndicator.style.color = 'red'; }
+                        if (errEl) { errEl.style.display = 'block'; }
+                    } else {
+                        this.style.border = '';
+                        if (lenIndicator) { lenIndicator.textContent = len + '/200'; lenIndicator.style.color = '#666'; }
+                        if (errEl) { errEl.style.display = 'none'; }
+                    }
+                });
+                // initialize indicator
+                (function () { var ev = new Event('input'); msgInput.dispatchEvent(ev); })();
+            }
+        });
+
+        // Protect against programmatic submission via form.submit()
+        (function () {
+            var origSubmit = HTMLFormElement.prototype.submit;
+            HTMLFormElement.prototype.submit = function () {
+                try {
+                    var msgEl = this.querySelector('#message-input');
+                    var msg = msgEl ? (msgEl.value || '') : '';
+                    if (msg.length > 200) {
+                        alert('Die Nachricht ist zu lang. Das Limit beträgt 200 Zeichen.');
+                        return;
+                    }
+                } catch (e) {}
+                return origSubmit.apply(this, arguments);
+            };
+        })();</script></body></html>
