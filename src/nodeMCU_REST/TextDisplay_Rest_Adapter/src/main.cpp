@@ -369,7 +369,7 @@ void render_and_send(const char* action, const char *param) {
 
 void handle_post_form_request(AsyncWebServerRequest *request)
 {
-  LOG_DEBUG_LN("handle_post_form_request: Received HTTP POST textecke request");
+  LOG_DEBUG_LN("handle_post_form_request: Received HTTP POST texteck request");
   if (request->method() != HTTP_POST) {
     request->send(405, "text/plain", "Method Not Allowed");
   } else {
@@ -530,7 +530,7 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
 void handle_notFound(AsyncWebServerRequest *request)
 {
   LOG_DEBUG_F("handle_notFound: Unable to handle the request: %s", request->url().c_str());
-  request->send(404, "text/plain", "The textecke resource was not found url");
+  request->send(404, "text/plain", "The texteck resource was not found url");
 }
 
 
