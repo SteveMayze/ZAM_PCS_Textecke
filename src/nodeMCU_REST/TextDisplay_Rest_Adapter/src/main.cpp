@@ -19,13 +19,15 @@
 #include "AsyncJson.h"
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
+#include <map>
+#include <string>
 #include "LittleFS.h"
 #include <Wire.h>
 #include "logger.h"
 
 #define FRAME_DELIMITER 0xFE
 #define ACTION_MESSAGE 0x01
-#define ACTION_COLOUR 0x02
+#define ACTION_COLOR 0x02
 #define ACTION_SPEED 0x03
 #define ACTION_RESET 0x04
 #define ACTION_DEBUG 0x05
@@ -53,6 +55,9 @@ char foreground[16] = "white";
 char background[16] = "black";
 
 AsyncWebServer server(80);
+
+// Buffer POST bodies per-request (used by the explicit HTTP_POST handler)
+std::map<AsyncWebServerRequest *, std::string> postBodyBuffer;
 
 #define SPECIAL_CHAR 8
 uint8_t charmap[SPECIAL_CHAR][2] = {
@@ -140,44 +145,44 @@ static void log_truncated_frame(const uint8_t *message_frame, size_t payload_len
 
 
 
-uint8_t get_colour_byte(String colour_name){
-  uint8_t colour_byte = -1;
-  LOG_DEBUG_F("get_colour_byte: colour_name: %s \n", colour_name.c_str());
-  if ( colour_name.equals("black") ){
-    colour_byte = 0x00;
+uint8_t get_color_byte(String color_name){
+  uint8_t color_byte = -1;
+  LOG_DEBUG_F("get_color_byte: color_name: %s \n", color_name.c_str());
+  if ( color_name.equals("black") ){
+    color_byte = 0x00;
   }
-  if ( colour_name.equals("red") ){
-    colour_byte = 0x01;
+  if ( color_name.equals("red") ){
+    color_byte = 0x01;
   }
-  if ( colour_name.equals("orange") ){
-    colour_byte = 0x02;
+  if ( color_name.equals("orange") ){
+    color_byte = 0x02;
   }
-  if ( colour_name.equals("yellow") ){
-    colour_byte = 0x03;
+  if ( color_name.equals("yellow") ){
+    color_byte = 0x03;
   }
-  if ( colour_name.equals("green") ){
-    colour_byte = 0x04;
+  if ( color_name.equals("green") ){
+    color_byte = 0x04;
   }
-  if ( colour_name.equals("blue") ){
-    colour_byte = 0x05;
+  if ( color_name.equals("blue") ){
+    color_byte = 0x05;
   }
-  if ( colour_name.equals("indigo") ){
-    colour_byte = 0x06;
+  if ( color_name.equals("indigo") ){
+    color_byte = 0x06;
   }
-  if ( colour_name.equals("violet") ){
-    colour_byte = 0x07;
+  if ( color_name.equals("violet") ){
+    color_byte = 0x07;
   }
-  if ( colour_name.equals("white")){
-    colour_byte = 0x08;
+  if ( color_name.equals("white")){
+    color_byte = 0x08;
   }
-  return colour_byte;
+  return color_byte;
 }
 
 String generate_option(String var, bool fg_option) {
 
-  String template_colour = var.substring(var.indexOf('_')+1, var.length());
-  // LOG_DEBUG_F("generate_option: Checking colour: %s against %s \n", template_colour, (fg_option ? foreground : background));
-  if( (fg_option && template_colour.equals(foreground )) || ( !fg_option && template_colour.equals(background))){
+  String template_color = var.substring(var.indexOf('_')+1, var.length());
+  // LOG_DEBUG_F("generate_option: Checking color: %s against %s \n", template_color, (fg_option ? foreground : background));
+  if( (fg_option && template_color.equals(foreground )) || ( !fg_option && template_color.equals(background))){
     LOG_DEBUG_F("generate_option: Reurning SELECTED for var %s\n", var.c_str())
     return "selected";
   }
@@ -310,7 +315,7 @@ void render_and_send(const char* action, const char *param) {
       message_frame[0x01] = frame_length;
       LOG_DEBUG_F("render_and_send: Setting up the datagram. Data length: %02X\n", frame_length);
     }
-    else if (strcmp(action, "colour") == 0||strcmp(action, "color") == 0)
+    else if (strcmp(action, "color") == 0)
     {
       // Split the string around ":"
       // LHS=foreground, RHS=background.
@@ -320,8 +325,8 @@ void render_and_send(const char* action, const char *param) {
 
       frame_length = 1; // The length of the message + the action, one byte.
       message_frame[frame_idx++] = frame_length;
-      message_frame[frame_idx++] = ACTION_COLOUR;
-      LOG_DEBUG_LN("Preparing the colour action: ");
+      message_frame[frame_idx++] = ACTION_COLOR;
+      LOG_DEBUG_LN("Preparing the color action: ");
       char *fg = strtok(_param, ":");
       char *bg = strtok(NULL, ":");
       LOG_DEBUG_F("render_and_send: fg: %s \n", fg);
@@ -331,7 +336,7 @@ void render_and_send(const char* action, const char *param) {
         foreground[sizeof(foreground)-1] = '\0';
         // strupr(foreground);
       }
-      message_frame[frame_idx++] = get_colour_byte(foreground);
+      message_frame[frame_idx++] = get_color_byte(foreground);
       frame_length++;
       if( bg != NULL){
         LOG_DEBUG_F("render_and_send: bg: %s \n", bg);
@@ -339,7 +344,7 @@ void render_and_send(const char* action, const char *param) {
         background[sizeof(background)-1] = '\0';
         // strupr(background);
       }
-      message_frame[frame_idx++] = get_colour_byte(background);
+      message_frame[frame_idx++] = get_color_byte(background);
       frame_length++;
       LOG_DEBUG_LN("");
       message_frame[0x01] = frame_length;
@@ -364,7 +369,7 @@ void render_and_send(const char* action, const char *param) {
 
 void handle_post_form_request(AsyncWebServerRequest *request)
 {
-  LOG_DEBUG_LN("handle_post_form_request: Received HTTP POST textecke request");
+  LOG_DEBUG_LN("handle_post_form_request: Received HTTP POST texteck request");
   if (request->method() != HTTP_POST) {
     request->send(405, "text/plain", "Method Not Allowed");
   } else {
@@ -400,8 +405,8 @@ void handle_post_form_request(AsyncWebServerRequest *request)
     tempstr.concat(":");
     tempstr.concat(background);
 
-    LOG_DEBUG_F("Rendering the colours to send: %s\n", tempstr.c_str());
-    render_and_send("colour", tempstr.c_str());
+    LOG_DEBUG_F("Rendering the colors to send: %s\n", tempstr.c_str());
+    render_and_send("color", tempstr.c_str());
 
     if(strlen(new_message) > 0) {
       LOG_DEBUG_F("Rendering the message to send: %s\n", new_message);
@@ -429,37 +434,85 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
 {
   LOG_DEBUG_LN("Received REST POST request");
     String result = "";
-
-    String action = docVar["action"];
-    String param = docVar["param"];
-    if ( action.equals("message")){
-      if(param.length() > MESSAGE_SIZE){
-          LOG_DEBUG_F("handle_rest_request: The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
-          param = param.substring(0, MESSAGE_SIZE);
-          param.concat("...");
+    // Support new-style payloads: { "text": "..." }
+    if (docVar.containsKey("text") && docVar["text"].is<const char*>()) {
+      String param = String(docVar["text"].as<const char*>());
+      if (param.length() > MESSAGE_SIZE) {
+        LOG_DEBUG_F("handle_rest_request: The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
+        param = param.substring(0, MESSAGE_SIZE);
+        param.concat("...");
       }
-      LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s", action.c_str(), param.c_str());
+      LOG_DEBUG_F("handle_rest_request: Calling render and send for message, param: %s", param.c_str());
       memset(new_message, 0x00, MESSAGE_BUFFER_SIZE);
-      // Copy safely from String into fixed buffer
       param.toCharArray(new_message, MESSAGE_BUFFER_SIZE);
       LOG_DEBUG_F("handle_rest_request: freeHeap before render: %u\n", ESP.getFreeHeap());
-      // copy into current_message safely and render
       memset(current_message, 0x00, MESSAGE_BUFFER_SIZE);
       strncpy(current_message, new_message, MESSAGE_BUFFER_SIZE - 1);
       current_message[MESSAGE_BUFFER_SIZE - 1] = '\0';
-      render_and_send(action.c_str(), current_message);
+      render_and_send("message", current_message);
       LOG_DEBUG_F("handle_rest_request: freeHeap after render: %u\n", ESP.getFreeHeap());
     } else {
-      LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s. Existing fg: %s, bg: %s \n", 
-        action.c_str(), param.c_str(), foreground, background);
-      if (param.startsWith(":")){
-        String tmpstr = String(foreground);
-        tmpstr.concat(param);
-        LOG_DEBUG_F("Colour code to be passed to render_and_send %s \n", tmpstr.c_str());
-        render_and_send(action.c_str(), tmpstr.c_str());
+      // New-style color fields: handle fg/bg alongside legacy action/param
+      bool hasFgField = docVar.containsKey("fg") && docVar["fg"].is<const char*>();
+      bool hasBgField = docVar.containsKey("bg") && docVar["bg"].is<const char*>();
+      if (hasFgField || hasBgField) {
+        if (hasFgField) {
+          const char *fg = docVar["fg"].as<const char *>();
+          if (strlen(fg) >= sizeof(foreground)) {
+            request->send(413, "application/json; charset=utf-8", "{\"error\":\"'fg' too long\"}");
+            return;
+          }
+          strncpy(foreground, fg, sizeof(foreground)-1);
+          foreground[sizeof(foreground)-1] = '\0';
+        }
+        if (hasBgField) {
+          const char *bg = docVar["bg"].as<const char *>();
+          if (strlen(bg) >= sizeof(background)) {
+            request->send(413, "application/json; charset=utf-8", "{\"error\":\"'bg' too long\"}");
+            return;
+          }
+          strncpy(background, bg, sizeof(background)-1);
+          background[sizeof(background)-1] = '\0';
+        }
+        String temp = String(foreground);
+        temp.concat(":");
+        temp.concat(background);
+        LOG_DEBUG_F("handle_rest_request: Applying colors %s\n", temp.c_str());
+        render_and_send("color", temp.c_str());
+      }
+
+      // Fallback: legacy format { "action": "xxx", "param": "yyy" }
+      String action = docVar["action"];
+      String param = docVar["param"];
+      if ( action.equals("message")){
+        if(param.length() > MESSAGE_SIZE){
+            LOG_DEBUG_F("handle_rest_request: The message is greater than %d characters. Truncating\n", MESSAGE_SIZE);
+            param = param.substring(0, MESSAGE_SIZE);
+            param.concat("...");
+        }
+        LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s", action.c_str(), param.c_str());
+        memset(new_message, 0x00, MESSAGE_BUFFER_SIZE);
+        // Copy safely from String into fixed buffer
+        param.toCharArray(new_message, MESSAGE_BUFFER_SIZE);
+        LOG_DEBUG_F("handle_rest_request: freeHeap before render: %u\n", ESP.getFreeHeap());
+        // copy into current_message safely and render
+        memset(current_message, 0x00, MESSAGE_BUFFER_SIZE);
+        strncpy(current_message, new_message, MESSAGE_BUFFER_SIZE - 1);
+        current_message[MESSAGE_BUFFER_SIZE - 1] = '\0';
+        render_and_send(action.c_str(), current_message);
+        LOG_DEBUG_F("handle_rest_request: freeHeap after render: %u\n", ESP.getFreeHeap());
       } else {
-        LOG_DEBUG_F("Colour code to be passed to render_and_send %s \n", param.c_str());
-        render_and_send(action.c_str(), param.c_str());
+        LOG_DEBUG_F("handle_rest_request: Calling render and send for: %s, param: %s. Existing fg: %s, bg: %s \n", 
+          action.c_str(), param.c_str(), foreground, background);
+        if (param.startsWith(":")){
+          String tmpstr = String(foreground);
+          tmpstr.concat(param);
+          LOG_DEBUG_F("Color code to be passed to render_and_send %s \n", tmpstr.c_str());
+          render_and_send(action.c_str(), tmpstr.c_str());
+        } else {
+          LOG_DEBUG_F("Color code to be passed to render_and_send %s \n", param.c_str());
+          render_and_send(action.c_str(), param.c_str());
+        }
       }
     }
 
@@ -477,17 +530,24 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
 void handle_notFound(AsyncWebServerRequest *request)
 {
   LOG_DEBUG_F("handle_notFound: Unable to handle the request: %s", request->url().c_str());
-  request->send(404, "text/plain", "The textecke resource was not found url");
+  request->send(404, "text/plain", "The texteck resource was not found url");
 }
 
 
-void setup()
+void setup_system_resources()
 {
-
   LOG_INIT(115200);
   TextDisplaySerial.begin(9600);
   delay(100);
- 
+
+  if(!LittleFS.begin()){
+      LOG_ERROR_LN("An Error has occurred while mounting LittleFS");
+      return;
+  }
+}
+
+void setup_wifi_and_network()
+{
   LOG_DEBUG_F("Connecting to %s \n", ssid);
   // connect to your local wi-fi network
   WiFi.mode(WIFI_STA);
@@ -508,49 +568,165 @@ void setup()
   LOG_INFO_F("This hostname: %s\n", WiFi.getHostname());
   LOG_INFO("Got IP: ");
   LOG_INFO_LN(WiFi.localIP());
-
-  if(!LittleFS.begin()){
-      LOG_ERROR_LN("An Error has occurred while mounting LittleFS");
-      return;
-  }
- 
-  // -- REST
-  // server.on("/api/v1/message", HTTP_POST, handle_rest_request);
-  AsyncCallbackJsonWebHandler *handle_json = new AsyncCallbackJsonWebHandler("/api/v1/message", [](AsyncWebServerRequest *request, JsonVariant &json) {
-    // Pass the parsed JsonVariant directly to the request handler to avoid
-    // holding a large static JsonDocument in RAM.
-    handle_rest_request(request, json);
-    }); 
-
-    server.addHandler(handle_json);
-    // -- HTTP
-    server.on("/textecke", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { 
-                    request->send(LittleFS, "/index.min.html", String(), false, html_processor); 
-                  });
-
-    server.on("/res/style.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { 
-                    request->send(LittleFS, "/res/style.min.css", String(), false, css_processor); 
-                  });
-
-    server.on("/res/ZAM_ot-Logo-wt.png", HTTP_GET, [](AsyncWebServerRequest *request)
-                  { request->send(LittleFS, "/res/ZAM_ot-Logo-wt.png", "image/png"); });
-
-    server.on("/textecke", HTTP_POST, handle_post_form_request);
-
-    server.onNotFound(handle_notFound);
-
-    server.begin();
-    LOG_DEBUG_LN("HTTP server started");
-
-    render_and_send("message", current_message);
-    String tempstr = foreground;
-    tempstr.concat(":");
-    tempstr.concat(background);
-    // LOG_DEBUG_F("Rendering the colours to send: %s\n", tempstr.c_str());
-    render_and_send("colour", tempstr.c_str());
 }
+
+void setup_rest_api()
+{
+  // -- REST
+  // POST endpoint: accept JSON body and call handle_rest_request
+  server.on("/api/v1/message", HTTP_POST,
+    [](AsyncWebServerRequest *request) {
+      // onRequest - response is handled after body is parsed in onBody
+    },
+    NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+      LOG_INFO_LN("Received REST POST message request");      
+      std::string &buf = postBodyBuffer[request];
+      if (index == 0) buf.clear();
+      buf.append((const char *)data, len);
+      if (index + len == total) {
+        DynamicJsonDocument doc(1024);
+        DeserializationError err = deserializeJson(doc, buf.c_str(), buf.size());
+        if (err) {
+          request->send(400, "application/json; charset=utf-8", "{\"error\":\"Invalid JSON\"}");
+        } else {
+          // Validate presence and byte-length of 'text' (max 200 bytes)
+          if (!doc.containsKey("text") || !doc["text"].is<const char*>()) {
+            request->send(400, "application/json; charset=utf-8", "{\"error\":\"Missing or invalid 'text' field\"}");
+          } else {
+            const char *txt = doc["text"].as<const char *>();
+            size_t txt_len = strlen(txt); // bytes in UTF-8
+            if (txt_len > 200) {
+              request->send(413, "application/json; charset=utf-8", "{\"error\":\"'text' too long (max 200 bytes)\"}");
+            } else {
+              JsonVariant var = doc.as<JsonVariant>();
+              handle_rest_request(request, var);
+            }
+          }
+        }
+        postBodyBuffer.erase(request);
+      }
+    }
+  );
+    // GET endpoint: return the current message as JSON
+    server.on("/api/v1/message", HTTP_GET, [](AsyncWebServerRequest *request) {
+      LOG_INFO_LN("Received REST GET message request");
+      String response;
+      DynamicJsonDocument doc(512);
+      doc["message"] = current_message;
+      serializeJson(doc, response);
+      request->send(200, "application/json; charset=utf-8", response);
+    });
+
+    // Color endpoints
+    // POST /api/v1/color - accept JSON with at least one of 'fg' or 'bg'
+    server.on("/api/v1/color", HTTP_POST,
+      [](AsyncWebServerRequest *request) {
+        // onRequest - response handled in body callback
+      },
+      NULL,
+      [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        LOG_INFO_LN("Received REST POST color request");
+        std::string &buf = postBodyBuffer[request];
+        if (index == 0) buf.clear();
+        buf.append((const char *)data, len);
+        if (index + len == total) {
+          DynamicJsonDocument doc(512);
+          DeserializationError err = deserializeJson(doc, buf.c_str(), buf.size());
+          if (err) {
+            request->send(400, "application/json; charset=utf-8", "{\"error\":\"Invalid JSON\"}");
+          } else {
+            bool hasFg = doc.containsKey("fg") && doc["fg"].is<const char*>();
+            bool hasBg = doc.containsKey("bg") && doc["bg"].is<const char*>();
+            if (!hasFg && !hasBg) {
+              request->send(400, "application/json; charset=utf-8", "{\"error\":\"Must provide 'fg' or 'bg'\"}");
+            } else {
+              // Validate lengths (max 15 bytes to fit into foreground/background buffers)
+              if (hasFg) {
+                const char *fg = doc["fg"].as<const char *>();
+                if (strlen(fg) >= sizeof(foreground)) {
+                  request->send(413, "application/json; charset=utf-8", "{\"error\":\"'fg' too long (max 15 bytes)\"}");
+                  postBodyBuffer.erase(request);
+                  return;
+                }
+                strncpy(foreground, fg, sizeof(foreground)-1);
+                foreground[sizeof(foreground)-1] = '\0';
+              }
+              if (hasBg) {
+                const char *bg = doc["bg"].as<const char *>();
+                if (strlen(bg) >= sizeof(background)) {
+                  request->send(413, "application/json; charset=utf-8", "{\"error\":\"'bg' too long (max 15 bytes)\"}");
+                  postBodyBuffer.erase(request);
+                  return;
+                }
+                strncpy(background, bg, sizeof(background)-1);
+                background[sizeof(background)-1] = '\0';
+              }
+              // Apply colors to display
+              String tempstr = String(foreground);
+              tempstr.concat(":");
+              tempstr.concat(background);
+              render_and_send("color", tempstr.c_str());
+              request->send(200, "application/json; charset=utf-8", "{\"status\":\"ok\"}");
+            }
+          }
+          postBodyBuffer.erase(request);
+        }
+      }
+    );
+
+    // GET /api/v1/color - return current fg/bg
+    server.on("/api/v1/color", HTTP_GET, [](AsyncWebServerRequest *request) {
+      LOG_INFO_LN("Received REST GET color request");
+      String response;
+      DynamicJsonDocument doc(256);
+      doc["fg"] = foreground;
+      doc["bg"] = background;
+      serializeJson(doc, response);
+      request->send(200, "application/json; charset=utf-8", response);
+    });
+}
+
+void setup_html_ui()
+{
+  // -- HTTP
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+                { 
+                  request->send(LittleFS, "/index.min.html", String(), false, html_processor); 
+                });
+
+  server.on("/res/style.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
+                { 
+                  request->send(LittleFS, "/res/style.min.css", String(), false, css_processor); 
+                });
+
+  server.on("/res/ZAM_ot-Logo-wt.png", HTTP_GET, [](AsyncWebServerRequest *request)
+                { request->send(LittleFS, "/res/ZAM_ot-Logo-wt.png", "image/png"); });
+
+  server.on("/", HTTP_POST, handle_post_form_request);
+
+  server.onNotFound(handle_notFound);
+}
+
+void setup()
+{
+  setup_system_resources();
+  setup_wifi_and_network();
+  setup_rest_api();
+  setup_html_ui();
+
+  server.begin();
+  LOG_DEBUG_LN("HTTP server started");
+
+  // Initialize display with default values
+  render_and_send("message", current_message);
+  String tempstr = foreground;
+  tempstr.concat(":");
+  tempstr.concat(background);
+  render_and_send("color", tempstr.c_str());
+}
+
+
 void loop()
 {
 
