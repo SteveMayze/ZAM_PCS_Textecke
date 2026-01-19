@@ -36,11 +36,10 @@ private:
     
     /**
      * @brief Send HTTP POST request to the Oracle ORDS endpoint
-     * @param eventType Type of event ("MESSAGE" or "COLOR")
-     * @param eventData The event data (message text or color values)
+     * @param message The message to log (formatted string)
      * @return true if successfully sent, false otherwise
      */
-    static bool sendEventToOracle(const char* eventType, const char* eventData);
+    static bool sendEventToOracle(const char* message);
     
 public:
     /**

@@ -3,8 +3,8 @@
 #include "secrets.h"
 
 // Oracle Cloud ORDS configuration
-const char* DatabaseLogger::ORACLE_ENDPOINT = "https://b0o5r0vxkz5ekbo-db202011271753.adb.eu-frankfurt-1.oraclecloudapps.com";
-const char* DatabaseLogger::EVENT_RESOURCE = "/ords/texteck_dev/events";
+const char* DatabaseLogger::ORACLE_ENDPOINT = ORACLE_ENDPOINT;
+const char* DatabaseLogger::EVENT_RESOURCE = ORACLE_EVENT_RESOURCE;
 const char* DatabaseLogger::ORACLE_USERNAME = ORACLE_ORDS_USER;
 const char* DatabaseLogger::ORACLE_PASSWORD = ORACLE_ORDS_PASS;
 
@@ -71,9 +71,9 @@ String DatabaseLogger::generateBasicAuthHeader() {
     return encoded;
 }
 
-bool DatabaseLogger::sendEventToOracle(const char* eventType, const char* eventData) {
-    if (!eventType || !eventData) {
-        LOG_ERROR_LN("DatabaseLogger: Invalid parameters");
+bool DatabaseLogger::sendEventToOracle(const char* message) {
+    if (!message) {
+        LOG_ERROR_LN("DatabaseLogger: Invalid message parameter");
         return false;
     }
     
@@ -90,7 +90,8 @@ bool DatabaseLogger::sendEventToOracle(const char* eventType, const char* eventD
     String url = String(ORACLE_ENDPOINT);
     url.concat(EVENT_RESOURCE);
     
-    LOG_INFO_F("DatabaseLogger: Sending %s event to %s\n", eventType, url.c_str());
+    LOG_INFO_F("DatabaseLogger: Sending event to %s\n", url.c_str());
+    LOG_DEBUG_F("DatabaseLogger: Full URL length: %d\n", url.length());
     
     bool success = false;
     int attempts = 0;
@@ -103,11 +104,20 @@ bool DatabaseLogger::sendEventToOracle(const char* eventType, const char* eventD
             delay(500); // Wait before retry
         }
         
-        // Create JSON payload
-        DynamicJsonDocument doc(512);
-        doc["event_type"] = eventType;
-        doc["event_data"] = eventData;
-        doc["timestamp"] = millis(); // You can enhance this with real time if NTP is available
+        // Create JSON payload matching API specification
+        // {
+        //   "mac_address": "string",
+        //   "message": "string"
+        // }
+        // Note: event_ts and id are handled by the ORDS API/database
+        JsonDocument doc;
+        
+        // MAC address of the device
+        String macAddress = WiFi.macAddress();
+        doc["mac_address"] = macAddress.c_str();
+        
+        // Message content
+        doc["message"] = message;
         
         String jsonPayload;
         serializeJson(doc, jsonPayload);
@@ -150,14 +160,11 @@ bool DatabaseLogger::logMessageEvent(const char* text) {
         return false;
     }
     
-    DynamicJsonDocument doc(256);
-    doc["text"] = text;
-    doc["length"] = strlen(text);
+    // Format: MESSAGE: <text>
+    String message = "MESSAGE: ";
+    message.concat(text);
     
-    String eventData;
-    serializeJson(doc, eventData);
-    
-    return sendEventToOracle("MESSAGE", eventData.c_str());
+    return sendEventToOracle(message.c_str());
 }
 
 bool DatabaseLogger::logColorEvent(const char* foreground, const char* background) {
@@ -166,14 +173,13 @@ bool DatabaseLogger::logColorEvent(const char* foreground, const char* backgroun
         return false;
     }
     
-    DynamicJsonDocument doc(256);
-    doc["fg"] = foreground;
-    doc["bg"] = background;
+    // Format: COLOR: fg=<foreground>, bg=<background>
+    String message = "COLOR: fg=";
+    message.concat(foreground);
+    message.concat(", bg=");
+    message.concat(background);
     
-    String eventData;
-    serializeJson(doc, eventData);
-    
-    return sendEventToOracle("COLOR", eventData.c_str());
+    return sendEventToOracle(message.c_str());
 }
 
 bool DatabaseLogger::logCustomEvent(const char* eventType, const char* eventData) {
@@ -182,5 +188,10 @@ bool DatabaseLogger::logCustomEvent(const char* eventType, const char* eventData
         return false;
     }
     
-    return sendEventToOracle(eventType, eventData);
+    // Format: <eventType>: <eventData>
+    String message = eventType;
+    message.concat(": ");
+    message.concat(eventData);
+    
+    return sendEventToOracle(message.c_str());
 }
