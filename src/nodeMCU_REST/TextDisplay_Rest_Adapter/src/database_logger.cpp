@@ -3,8 +3,8 @@
 #include "secrets.h"
 
 // Oracle Cloud ORDS configuration
-const char* DatabaseLogger::ORACLE_ENDPOINT = ORACLE_ENDPOINT;
-const char* DatabaseLogger::EVENT_RESOURCE = ORACLE_EVENT_RESOURCE;
+const char* DatabaseLogger::ORACLE_ENDPOINT = ORACLE_ORDS_ENDPOINT;
+const char* DatabaseLogger::EVENT_RESOURCE = ORACLE_ORDS_EVENT_RESOURCE;
 const char* DatabaseLogger::ORACLE_USERNAME = ORACLE_ORDS_USER;
 const char* DatabaseLogger::ORACLE_PASSWORD = ORACLE_ORDS_PASS;
 
