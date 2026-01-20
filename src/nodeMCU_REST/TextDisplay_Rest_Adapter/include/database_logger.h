@@ -36,10 +36,12 @@ private:
     
     /**
      * @brief Send HTTP POST request to the Oracle ORDS endpoint
-     * @param message The message to log (formatted string)
+     * @param eventName The event name to discriminate resource type (MESSAGE, COLOR, ERROR, etc.)
+     * @param message The message content to log
+     * @param clientIP The IP address of the HTTP client/sender (optional, can be NULL)
      * @return true if successfully sent, false otherwise
      */
-    static bool sendEventToOracle(const char* message);
+    static bool sendEventToOracle(const char* eventName, const char* message, const char* clientIP);
     
 public:
     /**
@@ -51,25 +53,28 @@ public:
     /**
      * @brief Log a message event to the database
      * @param text The message text that was sent
+     * @param clientIP The IP address of the HTTP client/sender (optional, can be NULL)
      * @return true if logged successfully
      */
-    static bool logMessageEvent(const char* text);
+    static bool logMessageEvent(const char* text, const char* clientIP = NULL);
     
     /**
      * @brief Log a color event to the database
      * @param foreground Foreground color
      * @param background Background color
+     * @param clientIP The IP address of the HTTP client/sender (optional, can be NULL)
      * @return true if logged successfully
      */
-    static bool logColorEvent(const char* foreground, const char* background);
+    static bool logColorEvent(const char* foreground, const char* background, const char* clientIP = NULL);
     
     /**
      * @brief Log a raw event with custom event type and data
      * @param eventType Type of event
      * @param eventData Event data as JSON string
+     * @param clientIP The IP address of the HTTP client/sender (optional, can be NULL)
      * @return true if logged successfully
      */
-    static bool logCustomEvent(const char* eventType, const char* eventData);
+    static bool logCustomEvent(const char* eventType, const char* eventData, const char* clientIP = NULL);
 };
 
 #endif // DATABASE_LOGGER_H

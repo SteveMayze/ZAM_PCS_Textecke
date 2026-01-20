@@ -71,9 +71,9 @@ String DatabaseLogger::generateBasicAuthHeader() {
     return encoded;
 }
 
-bool DatabaseLogger::sendEventToOracle(const char* message) {
-    if (!message) {
-        LOG_ERROR_LN("DatabaseLogger: Invalid message parameter");
+bool DatabaseLogger::sendEventToOracle(const char* eventName, const char* message, const char* clientIP) {
+    if (!eventName || !message) {
+        LOG_ERROR_LN("DatabaseLogger: Invalid eventName or message parameter");
         return false;
     }
     
@@ -106,15 +106,22 @@ bool DatabaseLogger::sendEventToOracle(const char* message) {
         
         // Create JSON payload matching API specification
         // {
-        //   "mac_address": "string",
+        //   "event_name": "string",
+        //   "ip_address": "string",
         //   "message": "string"
         // }
         // Note: event_ts and id are handled by the ORDS API/database
         JsonDocument doc;
         
-        // MAC address of the device
-        String macAddress = WiFi.macAddress();
-        doc["mac_address"] = macAddress.c_str();
+        // Event name to discriminate resource type (MESSAGE, COLOR, ERROR, etc.)
+        doc["event_name"] = eventName;
+        
+        // IP address of the client (sender of the request)
+        if (clientIP) {
+            doc["ip_address"] = clientIP;
+        } else {
+            doc["ip_address"] = "unknown";
+        }
         
         // Message content
         doc["message"] = message;
@@ -127,6 +134,18 @@ bool DatabaseLogger::sendEventToOracle(const char* message) {
         http.begin(url);
         http.addHeader("Content-Type", "application/json");
         http.setTimeout(TIMEOUT_MS);
+        
+        // Configure proxy if enabled
+        #ifdef USE_PROXY
+            http.setConnectTimeout(TIMEOUT_MS);
+            #if defined(TEXTECKE_ESP32)
+                http.setProxy(IPAddress(192, 168, 1, 1)); // Will be replaced by PROXY_HOST
+                http.setProxy(PROXY_HOST, PROXY_PORT);
+            #elif defined(TEXTECKE_ESP8266)
+                http.setProxy(PROXY_HOST, PROXY_PORT);
+            #endif
+            LOG_DEBUG_F("DatabaseLogger: Proxy configured - %s:%d\n", PROXY_HOST, PROXY_PORT);
+        #endif
         
         // Add Basic Authentication header
         String basicAuth = "Basic ";
@@ -154,44 +173,35 @@ bool DatabaseLogger::sendEventToOracle(const char* message) {
     return success;
 }
 
-bool DatabaseLogger::logMessageEvent(const char* text) {
+bool DatabaseLogger::logMessageEvent(const char* text, const char* clientIP) {
     if (!text) {
         LOG_ERROR_LN("DatabaseLogger: Message text is null");
         return false;
     }
     
-    // Format: MESSAGE: <text>
-    String message = "MESSAGE: ";
-    message.concat(text);
-    
-    return sendEventToOracle(message.c_str());
+    return sendEventToOracle("MESSAGE", text, clientIP);
 }
 
-bool DatabaseLogger::logColorEvent(const char* foreground, const char* background) {
+bool DatabaseLogger::logColorEvent(const char* foreground, const char* background, const char* clientIP) {
     if (!foreground || !background) {
         LOG_ERROR_LN("DatabaseLogger: Color parameters are null");
         return false;
     }
     
-    // Format: COLOR: fg=<foreground>, bg=<background>
-    String message = "COLOR: fg=";
+    // Format both colors in the message: fg=<foreground>, bg=<background>
+    String message = "fg=";
     message.concat(foreground);
     message.concat(", bg=");
     message.concat(background);
     
-    return sendEventToOracle(message.c_str());
+    return sendEventToOracle("COLOR", message.c_str(), clientIP);
 }
 
-bool DatabaseLogger::logCustomEvent(const char* eventType, const char* eventData) {
+bool DatabaseLogger::logCustomEvent(const char* eventType, const char* eventData, const char* clientIP) {
     if (!eventType || !eventData) {
         LOG_ERROR_LN("DatabaseLogger: Invalid event parameters");
         return false;
     }
     
-    // Format: <eventType>: <eventData>
-    String message = eventType;
-    message.concat(": ");
-    message.concat(eventData);
-    
-    return sendEventToOracle(message.c_str());
+    return sendEventToOracle(eventType, eventData, clientIP);
 }
