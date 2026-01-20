@@ -25,6 +25,7 @@
 #include <Wire.h>
 #include "logger.h"
 #include "database_logger.h"
+#include "oauth_handler.h"
 
 #define FRAME_DELIMITER 0xFE
 #define ACTION_MESSAGE 0x01

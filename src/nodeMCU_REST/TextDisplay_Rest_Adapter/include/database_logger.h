@@ -15,7 +15,11 @@
  * 
  * This module provides functionality to log message and color events
  * to an Oracle Cloud database using the ORDS REST endpoint.
- * Supports Basic Authentication via HTTP Authorization header.
+ * Supports OAuth 2.0 Bearer Token authentication (default) or Basic Authentication (fallback).
+ * 
+ * Authentication method controlled by USE_OAUTH define in secrets.h:
+ * - USE_OAUTH=1 (default): Uses OAuth 2.0 Bearer tokens
+ * - USE_OAUTH=0: Uses Basic Authentication with username/password
  */
 
 class DatabaseLogger {
@@ -24,15 +28,21 @@ private:
     static const char* EVENT_RESOURCE;
     static const int TIMEOUT_MS = 5000;
     static const int MAX_RETRIES = 2;
-    static const char* ORACLE_USERNAME;
-    static const char* ORACLE_PASSWORD;
     
-    /**
-     * @brief Generate Base64 encoded credentials for Basic Auth
-     * Format: Base64(username:password)
-     * @return String containing the Base64 encoded credentials
-     */
-    static String generateBasicAuthHeader();
+    #if !defined(USE_OAUTH) || USE_OAUTH
+        // OAuth mode - no additional static members needed
+    #else
+        // Basic Auth mode
+        static const char* ORACLE_USERNAME;
+        static const char* ORACLE_PASSWORD;
+        
+        /**
+         * @brief Generate Base64 encoded credentials for Basic Auth
+         * Format: Base64(username:password)
+         * @return String containing the Base64 encoded credentials
+         */
+        static String generateBasicAuthHeader();
+    #endif
     
     /**
      * @brief Send HTTP POST request to the Oracle ORDS endpoint
