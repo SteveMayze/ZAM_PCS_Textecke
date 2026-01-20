@@ -422,9 +422,11 @@ void handle_post_form_request(AsyncWebServerRequest *request)
     LOG_DEBUG_F("handle_post_form_request: freeHeap after processing: %u\n", ESP.getFreeHeap());
     
     // Log the message and color events to database
-    String clientIP = request->client()->remoteIP().toString();
-    DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
-    DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
+    #ifdef ENABLE_DATABASE_LOGGING
+        String clientIP = request->client()->remoteIP().toString();
+        DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
+        DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
+    #endif
 
     LOG_DEBUG_LN("Sending the main page back\n");
     request->send(LittleFS, "/index.min.html", String(), false, html_processor); 
@@ -457,8 +459,10 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
       current_message[MESSAGE_BUFFER_SIZE - 1] = '\0';
       render_and_send("message", current_message);
       LOG_DEBUG_F("handle_rest_request: freeHeap after render: %u\n", ESP.getFreeHeap());
-      String clientIP = request->client()->remoteIP().toString();
-      DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
+      #ifdef ENABLE_DATABASE_LOGGING
+          String clientIP = request->client()->remoteIP().toString();
+          DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
+      #endif
     } else {
       // New-style color fields: handle fg/bg alongside legacy action/param
       bool hasFgField = docVar.containsKey("fg") && docVar["fg"].is<const char*>();
