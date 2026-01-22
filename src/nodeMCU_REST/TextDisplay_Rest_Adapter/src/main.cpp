@@ -183,16 +183,16 @@ uint8_t get_color_byte(String color_name){
 String generate_option(String var, bool fg_option) {
 
   String template_color = var.substring(var.indexOf('_')+1, var.length());
-  // LOG_DEBUG_F("generate_option: Checking color: %s against %s \n", template_color, (fg_option ? foreground : background));
+  LOG_DEBUG_F("generate_option: Checking color: %s against %s \n", template_color, (fg_option ? foreground : background));
   if( (fg_option && template_color.equals(foreground )) || ( !fg_option && template_color.equals(background))){
-    LOG_DEBUG_F("generate_option: Reurning SELECTED for var %s\n", var.c_str())
+    LOG_DEBUG_F("generate_option: Returning SELECTED for var %s\n", var.c_str())
     return "selected";
   }
   return " ";
 }
 
 String css_processor(const String &var) {
-    // LOG_DEBUG_F("css_processor var: %s \n", var.c_str());
+    LOG_DEBUG_F("css_processor var: %s \n", var.c_str());
     if( var == "MARQUEE_FOREGROUND_TOKEN"){
       LOG_DEBUG_F("css_processor var MARQUEE_FOREGROUND_TOKEN: %s \n" , foreground);
       return foreground;
@@ -206,7 +206,7 @@ String css_processor(const String &var) {
 }
 
 String html_processor(const String &var) {
-    // LOG_DEBUG_F("html_processor var: %s \n", var.c_str());
+    LOG_DEBUG_F("html_processor var: %s \n", var.c_str());
     if (var == "MESSAGE_TOKEN"){
       size_t mlen = strlen(current_message);
       String preview = String(current_message);
@@ -221,12 +221,12 @@ String html_processor(const String &var) {
 
     if( var.startsWith("bot")) {
       String back_option = generate_option(var, false);
-      // LOG_DEBUG_F("html_processor var BACKGROUND_OPTION_TOKEN: %s \n" , back_option.c_str());
+      LOG_DEBUG_F("html_processor var BACKGROUND_OPTION_TOKEN: %s \n" , back_option.c_str());
       return back_option;
     }
     if( var.startsWith("fot")){
       String front_option = generate_option(var, true);
-      // LOG_DEBUG_F("html_processor var FOREGROUND_OPTION_TOKEN: %s \n" , front_option.c_str());
+      LOG_DEBUG_F("html_processor var FOREGROUND_OPTION_TOKEN: %s \n" , front_option.c_str());
       return front_option;
     }
 
@@ -424,7 +424,13 @@ void handle_post_form_request(AsyncWebServerRequest *request)
     
     // Log the message and color events to database
     #ifdef ENABLE_DATABASE_LOGGING
-        String clientIP = request->client()->remoteIP().toString();
+        String forwardIP = request->header("X-Forwarded-For");
+        String clientIP = "";
+        if (forwardIP.length() > 0) {
+          clientIP = forwardIP;
+        } else {
+          clientIP = request->client()->remoteIP().toString();
+        }
         DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
         DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
     #endif
@@ -492,6 +498,10 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
         temp.concat(background);
         LOG_DEBUG_F("handle_rest_request: Applying colors %s\n", temp.c_str());
         render_and_send("color", temp.c_str());
+        #ifdef ENABLE_DATABASE_LOGGING
+            String clientIP = request->client()->remoteIP().toString();
+            DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
+        #endif
       }
 
       // Fallback: legacy format { "action": "xxx", "param": "yyy" }
@@ -680,6 +690,10 @@ void setup_rest_api()
               tempstr.concat(":");
               tempstr.concat(background);
               render_and_send("color", tempstr.c_str());
+              #ifdef ENABLE_DATABASE_LOGGING
+                  String clientIP = request->client()->remoteIP().toString();
+                  DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
+              #endif
               request->send(200, "application/json; charset=utf-8", "{\"status\":\"ok\"}");
             }
           }
@@ -708,6 +722,8 @@ void setup_html_ui()
                   request->send(LittleFS, "/index.min.html", String(), false, html_processor); 
                 });
 
+  // server.serveStatic("/res/", LittleFS, "/res/"); 
+
   server.on("/res/style.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
                 { 
                   request->send(LittleFS, "/res/style.min.css", String(), false, css_processor); 
@@ -715,6 +731,9 @@ void setup_html_ui()
 
   server.on("/res/ZAM_ot-Logo-wt.png", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send(LittleFS, "/res/ZAM_ot-Logo-wt.png", "image/png"); });
+
+  server.on("/res/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
+                { request->send(LittleFS, "/res/favicon.ico", "image/x-icon"); });
 
   server.on("/", HTTP_POST, handle_post_form_request);
 
