@@ -61,6 +61,95 @@ AsyncWebServer server(80);
 // Buffer POST bodies per-request (used by the explicit HTTP_POST handler)
 std::map<AsyncWebServerRequest *, std::string> postBodyBuffer;
 
+// ==================== EVENT QUEUE FOR DATABASE LOGGING ====================
+// Prevents blocking async callbacks with long database operations
+// Events are queued in request handlers and processed in loop()
+
+enum EventType {
+  EVENT_NONE,
+  EVENT_MESSAGE_LOG,
+  EVENT_COLOR_LOG
+};
+
+struct DatabaseEvent {
+  EventType type;
+  char message[MESSAGE_BUFFER_SIZE];
+  char foreground_color[16];
+  char background_color[16];
+  char client_ip[16];
+  unsigned long timestamp;
+};
+
+#define EVENT_QUEUE_SIZE 10
+DatabaseEvent eventQueue[EVENT_QUEUE_SIZE];
+uint8_t eventQueueHead = 0;
+uint8_t eventQueueTail = 0;
+uint8_t eventQueueCount = 0;
+
+/**
+ * @brief Queue a database event to be processed in loop()
+ * @return true if event was queued successfully, false if queue is full
+ */
+bool queueDatabaseEvent(const DatabaseEvent &event) {
+  if (eventQueueCount >= EVENT_QUEUE_SIZE) {
+    LOG_INFO_LN("Event queue full, dropping event!");
+    return false;
+  }
+  
+  eventQueue[eventQueueTail] = event;
+  eventQueueTail = (eventQueueTail + 1) % EVENT_QUEUE_SIZE;
+  eventQueueCount++;
+  
+  LOG_DEBUG_F("Event queued. Queue size: %u\n", eventQueueCount);
+  return true;
+}
+
+/**
+ * @brief Dequeue and return next database event
+ * @return Event with type EVENT_NONE if queue is empty
+ */
+DatabaseEvent dequeueDatabaseEvent() {
+  DatabaseEvent emptyEvent = {EVENT_NONE, "", "", "", "", 0};
+  
+  if (eventQueueCount == 0) {
+    return emptyEvent;
+  }
+  
+  DatabaseEvent event = eventQueue[eventQueueHead];
+  eventQueueHead = (eventQueueHead + 1) % EVENT_QUEUE_SIZE;
+  eventQueueCount--;
+  
+  return event;
+}
+
+/**
+ * @brief Process pending database events
+ * Call this from loop() to avoid blocking request handlers
+ */
+void processPendingDatabaseEvents() {
+  DatabaseEvent event = dequeueDatabaseEvent();
+  
+  while (event.type != EVENT_NONE) {
+    switch (event.type) {
+      case EVENT_MESSAGE_LOG:
+        LOG_DEBUG_F("Processing queued message event: %s from %s\n", event.message, event.client_ip);
+        DatabaseLogger::logMessageEvent(event.message, event.client_ip);
+        break;
+        
+      case EVENT_COLOR_LOG:
+        LOG_DEBUG_F("Processing queued color event: fg=%s, bg=%s from %s\n", 
+                    event.foreground_color, event.background_color, event.client_ip);
+        DatabaseLogger::logColorEvent(event.foreground_color, event.background_color, event.client_ip);
+        break;
+        
+      default:
+        break;
+    }
+    
+    event = dequeueDatabaseEvent();
+  }
+}
+
 #define SPECIAL_CHAR 8
 uint8_t charmap[SPECIAL_CHAR][2] = {
     {0xA4, 0xE4}, // ä
@@ -422,7 +511,7 @@ void handle_post_form_request(AsyncWebServerRequest *request)
 
     LOG_DEBUG_F("handle_post_form_request: freeHeap after processing: %u\n", ESP.getFreeHeap());
     
-    // Log the message and color events to database
+    // Queue database events to be processed in loop() to avoid blocking async handler
     #ifdef ENABLE_DATABASE_LOGGING
         String forwardIP = request->header("X-Forwarded-For");
         String clientIP = "";
@@ -431,8 +520,24 @@ void handle_post_form_request(AsyncWebServerRequest *request)
         } else {
           clientIP = request->client()->remoteIP().toString();
         }
-        DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
-        DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
+        
+        // Queue message event
+        DatabaseEvent msgEvent = {EVENT_MESSAGE_LOG, "", "", "", "", millis()};
+        strncpy(msgEvent.message, current_message, sizeof(msgEvent.message) - 1);
+        msgEvent.message[sizeof(msgEvent.message) - 1] = '\0';
+        strncpy(msgEvent.client_ip, clientIP.c_str(), sizeof(msgEvent.client_ip) - 1);
+        msgEvent.client_ip[sizeof(msgEvent.client_ip) - 1] = '\0';
+        queueDatabaseEvent(msgEvent);
+        
+        // Queue color event
+        DatabaseEvent colorEvent = {EVENT_COLOR_LOG, "", "", "", "", millis()};
+        strncpy(colorEvent.foreground_color, foreground, sizeof(colorEvent.foreground_color) - 1);
+        colorEvent.foreground_color[sizeof(colorEvent.foreground_color) - 1] = '\0';
+        strncpy(colorEvent.background_color, background, sizeof(colorEvent.background_color) - 1);
+        colorEvent.background_color[sizeof(colorEvent.background_color) - 1] = '\0';
+        strncpy(colorEvent.client_ip, clientIP.c_str(), sizeof(colorEvent.client_ip) - 1);
+        colorEvent.client_ip[sizeof(colorEvent.client_ip) - 1] = '\0';
+        queueDatabaseEvent(colorEvent);
     #endif
 
     LOG_DEBUG_LN("Sending the main page back\n");
@@ -468,7 +573,12 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
       LOG_DEBUG_F("handle_rest_request: freeHeap after render: %u\n", ESP.getFreeHeap());
       #ifdef ENABLE_DATABASE_LOGGING
           String clientIP = request->client()->remoteIP().toString();
-          DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
+          DatabaseEvent msgEvent = {EVENT_MESSAGE_LOG, "", "", "", "", millis()};
+          strncpy(msgEvent.message, current_message, sizeof(msgEvent.message) - 1);
+          msgEvent.message[sizeof(msgEvent.message) - 1] = '\0';
+          strncpy(msgEvent.client_ip, clientIP.c_str(), sizeof(msgEvent.client_ip) - 1);
+          msgEvent.client_ip[sizeof(msgEvent.client_ip) - 1] = '\0';
+          queueDatabaseEvent(msgEvent);
       #endif
     } else {
       // New-style color fields: handle fg/bg alongside legacy action/param
@@ -500,7 +610,14 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
         render_and_send("color", temp.c_str());
         #ifdef ENABLE_DATABASE_LOGGING
             String clientIP = request->client()->remoteIP().toString();
-            DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
+            DatabaseEvent colorEvent = {EVENT_COLOR_LOG, "", "", "", "", millis()};
+            strncpy(colorEvent.foreground_color, foreground, sizeof(colorEvent.foreground_color) - 1);
+            colorEvent.foreground_color[sizeof(colorEvent.foreground_color) - 1] = '\0';
+            strncpy(colorEvent.background_color, background, sizeof(colorEvent.background_color) - 1);
+            colorEvent.background_color[sizeof(colorEvent.background_color) - 1] = '\0';
+            strncpy(colorEvent.client_ip, clientIP.c_str(), sizeof(colorEvent.client_ip) - 1);
+            colorEvent.client_ip[sizeof(colorEvent.client_ip) - 1] = '\0';
+            queueDatabaseEvent(colorEvent);
         #endif
       }
 
@@ -692,7 +809,14 @@ void setup_rest_api()
               render_and_send("color", tempstr.c_str());
               #ifdef ENABLE_DATABASE_LOGGING
                   String clientIP = request->client()->remoteIP().toString();
-                  DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
+                  DatabaseEvent colorEvent = {EVENT_COLOR_LOG, "", "", "", "", millis()};
+                  strncpy(colorEvent.foreground_color, foreground, sizeof(colorEvent.foreground_color) - 1);
+                  colorEvent.foreground_color[sizeof(colorEvent.foreground_color) - 1] = '\0';
+                  strncpy(colorEvent.background_color, background, sizeof(colorEvent.background_color) - 1);
+                  colorEvent.background_color[sizeof(colorEvent.background_color) - 1] = '\0';
+                  strncpy(colorEvent.client_ip, clientIP.c_str(), sizeof(colorEvent.client_ip) - 1);
+                  colorEvent.client_ip[sizeof(colorEvent.client_ip) - 1] = '\0';
+                  queueDatabaseEvent(colorEvent);
               #endif
               request->send(200, "application/json; charset=utf-8", "{\"status\":\"ok\"}");
             }
@@ -763,5 +887,9 @@ void setup()
 
 void loop()
 {
-
+  // Process any pending database events without blocking
+  processPendingDatabaseEvents();
+  
+  // Yield to other tasks and prevent watchdog timeout
+  delay(10);
 }
