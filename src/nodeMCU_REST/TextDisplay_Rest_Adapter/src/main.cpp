@@ -61,6 +61,95 @@ AsyncWebServer server(80);
 // Buffer POST bodies per-request (used by the explicit HTTP_POST handler)
 std::map<AsyncWebServerRequest *, std::string> postBodyBuffer;
 
+// ==================== EVENT QUEUE FOR DATABASE LOGGING ====================
+// Prevents blocking async callbacks with long database operations
+// Events are queued in request handlers and processed in loop()
+
+enum EventType {
+  EVENT_NONE,
+  EVENT_MESSAGE_LOG,
+  EVENT_COLOR_LOG
+};
+
+struct DatabaseEvent {
+  EventType type;
+  char message[MESSAGE_BUFFER_SIZE];
+  char foreground_color[16];
+  char background_color[16];
+  char client_ip[16];
+  unsigned long timestamp;
+};
+
+#define EVENT_QUEUE_SIZE 10
+DatabaseEvent eventQueue[EVENT_QUEUE_SIZE];
+uint8_t eventQueueHead = 0;
+uint8_t eventQueueTail = 0;
+uint8_t eventQueueCount = 0;
+
+/**
+ * @brief Queue a database event to be processed in loop()
+ * @return true if event was queued successfully, false if queue is full
+ */
+bool queueDatabaseEvent(const DatabaseEvent &event) {
+  if (eventQueueCount >= EVENT_QUEUE_SIZE) {
+    LOG_INFO_LN("Event queue full, dropping event!");
+    return false;
+  }
+  
+  eventQueue[eventQueueTail] = event;
+  eventQueueTail = (eventQueueTail + 1) % EVENT_QUEUE_SIZE;
+  eventQueueCount++;
+  
+  LOG_DEBUG_F("Event queued. Queue size: %u\n", eventQueueCount);
+  return true;
+}
+
+/**
+ * @brief Dequeue and return next database event
+ * @return Event with type EVENT_NONE if queue is empty
+ */
+DatabaseEvent dequeueDatabaseEvent() {
+  DatabaseEvent emptyEvent = {EVENT_NONE, "", "", "", "", 0};
+  
+  if (eventQueueCount == 0) {
+    return emptyEvent;
+  }
+  
+  DatabaseEvent event = eventQueue[eventQueueHead];
+  eventQueueHead = (eventQueueHead + 1) % EVENT_QUEUE_SIZE;
+  eventQueueCount--;
+  
+  return event;
+}
+
+/**
+ * @brief Process pending database events
+ * Call this from loop() to avoid blocking request handlers
+ */
+void processPendingDatabaseEvents() {
+  DatabaseEvent event = dequeueDatabaseEvent();
+  
+  while (event.type != EVENT_NONE) {
+    switch (event.type) {
+      case EVENT_MESSAGE_LOG:
+        LOG_DEBUG_F("Processing queued message event: %s from %s\n", event.message, event.client_ip);
+        DatabaseLogger::logMessageEvent(event.message, event.client_ip);
+        break;
+        
+      case EVENT_COLOR_LOG:
+        LOG_DEBUG_F("Processing queued color event: fg=%s, bg=%s from %s\n", 
+                    event.foreground_color, event.background_color, event.client_ip);
+        DatabaseLogger::logColorEvent(event.foreground_color, event.background_color, event.client_ip);
+        break;
+        
+      default:
+        break;
+    }
+    
+    event = dequeueDatabaseEvent();
+  }
+}
+
 #define SPECIAL_CHAR 8
 uint8_t charmap[SPECIAL_CHAR][2] = {
     {0xA4, 0xE4}, // ä
@@ -183,16 +272,16 @@ uint8_t get_color_byte(String color_name){
 String generate_option(String var, bool fg_option) {
 
   String template_color = var.substring(var.indexOf('_')+1, var.length());
-  // LOG_DEBUG_F("generate_option: Checking color: %s against %s \n", template_color, (fg_option ? foreground : background));
+  LOG_DEBUG_F("generate_option: Checking color: %s against %s \n", template_color, (fg_option ? foreground : background));
   if( (fg_option && template_color.equals(foreground )) || ( !fg_option && template_color.equals(background))){
-    LOG_DEBUG_F("generate_option: Reurning SELECTED for var %s\n", var.c_str())
+    LOG_DEBUG_F("generate_option: Returning SELECTED for var %s\n", var.c_str())
     return "selected";
   }
   return " ";
 }
 
 String css_processor(const String &var) {
-    // LOG_DEBUG_F("css_processor var: %s \n", var.c_str());
+    LOG_DEBUG_F("css_processor var: %s \n", var.c_str());
     if( var == "MARQUEE_FOREGROUND_TOKEN"){
       LOG_DEBUG_F("css_processor var MARQUEE_FOREGROUND_TOKEN: %s \n" , foreground);
       return foreground;
@@ -206,7 +295,7 @@ String css_processor(const String &var) {
 }
 
 String html_processor(const String &var) {
-    // LOG_DEBUG_F("html_processor var: %s \n", var.c_str());
+    LOG_DEBUG_F("html_processor var: %s \n", var.c_str());
     if (var == "MESSAGE_TOKEN"){
       size_t mlen = strlen(current_message);
       String preview = String(current_message);
@@ -221,12 +310,12 @@ String html_processor(const String &var) {
 
     if( var.startsWith("bot")) {
       String back_option = generate_option(var, false);
-      // LOG_DEBUG_F("html_processor var BACKGROUND_OPTION_TOKEN: %s \n" , back_option.c_str());
+      LOG_DEBUG_F("html_processor var BACKGROUND_OPTION_TOKEN: %s \n" , back_option.c_str());
       return back_option;
     }
     if( var.startsWith("fot")){
       String front_option = generate_option(var, true);
-      // LOG_DEBUG_F("html_processor var FOREGROUND_OPTION_TOKEN: %s \n" , front_option.c_str());
+      LOG_DEBUG_F("html_processor var FOREGROUND_OPTION_TOKEN: %s \n" , front_option.c_str());
       return front_option;
     }
 
@@ -422,11 +511,33 @@ void handle_post_form_request(AsyncWebServerRequest *request)
 
     LOG_DEBUG_F("handle_post_form_request: freeHeap after processing: %u\n", ESP.getFreeHeap());
     
-    // Log the message and color events to database
+    // Queue database events to be processed in loop() to avoid blocking async handler
     #ifdef ENABLE_DATABASE_LOGGING
-        String clientIP = request->client()->remoteIP().toString();
-        DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
-        DatabaseLogger::logColorEvent(foreground, background, clientIP.c_str());
+        String forwardIP = request->header("X-Forwarded-For");
+        String clientIP = "";
+        if (forwardIP.length() > 0) {
+          clientIP = forwardIP;
+        } else {
+          clientIP = request->client()->remoteIP().toString();
+        }
+        
+        // Queue message event
+        DatabaseEvent msgEvent = {EVENT_MESSAGE_LOG, "", "", "", "", millis()};
+        strncpy(msgEvent.message, current_message, sizeof(msgEvent.message) - 1);
+        msgEvent.message[sizeof(msgEvent.message) - 1] = '\0';
+        strncpy(msgEvent.client_ip, clientIP.c_str(), sizeof(msgEvent.client_ip) - 1);
+        msgEvent.client_ip[sizeof(msgEvent.client_ip) - 1] = '\0';
+        queueDatabaseEvent(msgEvent);
+        
+        // Queue color event
+        DatabaseEvent colorEvent = {EVENT_COLOR_LOG, "", "", "", "", millis()};
+        strncpy(colorEvent.foreground_color, foreground, sizeof(colorEvent.foreground_color) - 1);
+        colorEvent.foreground_color[sizeof(colorEvent.foreground_color) - 1] = '\0';
+        strncpy(colorEvent.background_color, background, sizeof(colorEvent.background_color) - 1);
+        colorEvent.background_color[sizeof(colorEvent.background_color) - 1] = '\0';
+        strncpy(colorEvent.client_ip, clientIP.c_str(), sizeof(colorEvent.client_ip) - 1);
+        colorEvent.client_ip[sizeof(colorEvent.client_ip) - 1] = '\0';
+        queueDatabaseEvent(colorEvent);
     #endif
 
     LOG_DEBUG_LN("Sending the main page back\n");
@@ -462,7 +573,12 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
       LOG_DEBUG_F("handle_rest_request: freeHeap after render: %u\n", ESP.getFreeHeap());
       #ifdef ENABLE_DATABASE_LOGGING
           String clientIP = request->client()->remoteIP().toString();
-          DatabaseLogger::logMessageEvent(current_message, clientIP.c_str());
+          DatabaseEvent msgEvent = {EVENT_MESSAGE_LOG, "", "", "", "", millis()};
+          strncpy(msgEvent.message, current_message, sizeof(msgEvent.message) - 1);
+          msgEvent.message[sizeof(msgEvent.message) - 1] = '\0';
+          strncpy(msgEvent.client_ip, clientIP.c_str(), sizeof(msgEvent.client_ip) - 1);
+          msgEvent.client_ip[sizeof(msgEvent.client_ip) - 1] = '\0';
+          queueDatabaseEvent(msgEvent);
       #endif
     } else {
       // New-style color fields: handle fg/bg alongside legacy action/param
@@ -492,6 +608,17 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
         temp.concat(background);
         LOG_DEBUG_F("handle_rest_request: Applying colors %s\n", temp.c_str());
         render_and_send("color", temp.c_str());
+        #ifdef ENABLE_DATABASE_LOGGING
+            String clientIP = request->client()->remoteIP().toString();
+            DatabaseEvent colorEvent = {EVENT_COLOR_LOG, "", "", "", "", millis()};
+            strncpy(colorEvent.foreground_color, foreground, sizeof(colorEvent.foreground_color) - 1);
+            colorEvent.foreground_color[sizeof(colorEvent.foreground_color) - 1] = '\0';
+            strncpy(colorEvent.background_color, background, sizeof(colorEvent.background_color) - 1);
+            colorEvent.background_color[sizeof(colorEvent.background_color) - 1] = '\0';
+            strncpy(colorEvent.client_ip, clientIP.c_str(), sizeof(colorEvent.client_ip) - 1);
+            colorEvent.client_ip[sizeof(colorEvent.client_ip) - 1] = '\0';
+            queueDatabaseEvent(colorEvent);
+        #endif
       }
 
       // Fallback: legacy format { "action": "xxx", "param": "yyy" }
@@ -680,6 +807,17 @@ void setup_rest_api()
               tempstr.concat(":");
               tempstr.concat(background);
               render_and_send("color", tempstr.c_str());
+              #ifdef ENABLE_DATABASE_LOGGING
+                  String clientIP = request->client()->remoteIP().toString();
+                  DatabaseEvent colorEvent = {EVENT_COLOR_LOG, "", "", "", "", millis()};
+                  strncpy(colorEvent.foreground_color, foreground, sizeof(colorEvent.foreground_color) - 1);
+                  colorEvent.foreground_color[sizeof(colorEvent.foreground_color) - 1] = '\0';
+                  strncpy(colorEvent.background_color, background, sizeof(colorEvent.background_color) - 1);
+                  colorEvent.background_color[sizeof(colorEvent.background_color) - 1] = '\0';
+                  strncpy(colorEvent.client_ip, clientIP.c_str(), sizeof(colorEvent.client_ip) - 1);
+                  colorEvent.client_ip[sizeof(colorEvent.client_ip) - 1] = '\0';
+                  queueDatabaseEvent(colorEvent);
+              #endif
               request->send(200, "application/json; charset=utf-8", "{\"status\":\"ok\"}");
             }
           }
@@ -708,6 +846,8 @@ void setup_html_ui()
                   request->send(LittleFS, "/index.min.html", String(), false, html_processor); 
                 });
 
+  // server.serveStatic("/res/", LittleFS, "/res/"); 
+
   server.on("/res/style.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
                 { 
                   request->send(LittleFS, "/res/style.min.css", String(), false, css_processor); 
@@ -715,6 +855,9 @@ void setup_html_ui()
 
   server.on("/res/ZAM_ot-Logo-wt.png", HTTP_GET, [](AsyncWebServerRequest *request)
                 { request->send(LittleFS, "/res/ZAM_ot-Logo-wt.png", "image/png"); });
+
+  server.on("/res/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
+                { request->send(LittleFS, "/res/favicon.ico", "image/x-icon"); });
 
   server.on("/", HTTP_POST, handle_post_form_request);
 
@@ -744,5 +887,9 @@ void setup()
 
 void loop()
 {
-
+  // Process any pending database events without blocking
+  processPendingDatabaseEvents();
+  
+  // Yield to other tasks and prevent watchdog timeout
+  delay(10);
 }
