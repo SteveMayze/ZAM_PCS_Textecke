@@ -669,7 +669,7 @@ void handle_rest_request(AsyncWebServerRequest *request, JsonVariant &docVar)
 
 void handle_notFound(AsyncWebServerRequest *request)
 {
-  LOG_DEBUG_F("handle_notFound: Unable to handle the request: %s", request->url().c_str());
+  LOG_DEBUG_F("handle_notFound: Unable to handle the request: %s\n", request->url().c_str());
   request->send(404, "text/plain", "The texteck resource was not found url");
 }
 
@@ -846,18 +846,14 @@ void setup_html_ui()
                   request->send(LittleFS, "/index.min.html", String(), false, html_processor); 
                 });
 
-  // server.serveStatic("/res/", LittleFS, "/res/"); 
-
+  // Register specific handler for CSS that needs processor
   server.on("/res/style.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
                 { 
                   request->send(LittleFS, "/res/style.min.css", String(), false, css_processor); 
                 });
 
-  server.on("/res/ZAM_ot-Logo-wt.png", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send(LittleFS, "/res/ZAM_ot-Logo-wt.png", "image/png"); });
-
-  server.on("/res/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
-                { request->send(LittleFS, "/res/favicon.ico", "image/x-icon"); });
+  // Serve all other static resources from /res/ directory
+  server.serveStatic("/res/", LittleFS, "/res/");
 
   server.on("/", HTTP_POST, handle_post_form_request);
 
