@@ -14,6 +14,7 @@ SELECT
 FROM events
 ORDER BY event_ts DESC;
 
+truncate table events;
 delete events where id < 100;
 commit;
 
