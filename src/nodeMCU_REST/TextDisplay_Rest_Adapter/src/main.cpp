@@ -71,6 +71,60 @@ enum EventType {
   EVENT_COLOR_LOG
 };
 
+// ==================== AUTHORIZATION MIDDLEWARE ====================
+#ifdef ENABLE_AUTHORIZATION
+/**
+ * @brief Validates the Authorization header for incoming requests
+ * 
+ * Checks if the request contains a valid Bearer token in the Authorization header.
+ * Expected format: "Authorization: Bearer <token>"
+ * 
+ * @param request The incoming HTTP request
+ * @return true if authorization is valid or not required, false otherwise
+ */
+bool isAuthorized(AsyncWebServerRequest *request) {
+  // Check if Authorization header exists
+  if (!request->hasHeader("Authorization")) {
+    LOG_INFO_LN("Authorization failed: No Authorization header present");
+    return false;
+  }
+  
+  String authHeader = request->header("Authorization");
+  LOG_DEBUG_F("Authorization header: %s\n", authHeader.c_str());
+  
+  // Expected format: "Bearer <token>"
+  if (!authHeader.startsWith("Bearer ")) {
+    LOG_INFO_LN("Authorization failed: Invalid format (missing 'Bearer ')");
+    return false;
+  }
+  
+  // Extract token (skip "Bearer " prefix)
+  String token = authHeader.substring(7);
+  token.trim(); // Remove any leading/trailing whitespace
+  
+  // Compare with configured token
+  String expectedToken = String(AUTHORIZATION_TOKEN);
+  if (token != expectedToken) {
+    LOG_INFO_F("Authorization failed: Invalid token (got: %s)\n", token.c_str());
+    return false;
+  }
+  
+  LOG_DEBUG_LN("Authorization successful");
+  return true;
+}
+
+/**
+ * @brief Sends an unauthorized response to the client
+ * 
+ * @param request The incoming HTTP request to respond to
+ */
+void sendUnauthorized(AsyncWebServerRequest *request) {
+  request->send(401, "application/json; charset=utf-8", 
+                "{\"error\":\"Unauthorized - Valid Bearer token required\"}");
+}
+#endif
+// ==================== END AUTHORIZATION MIDDLEWARE ====================
+
 struct DatabaseEvent {
   EventType type;
   char message[MESSAGE_BUFFER_SIZE];
@@ -461,6 +515,10 @@ void render_and_send(const char* action, const char *param) {
 void handle_post_form_request(AsyncWebServerRequest *request)
 {
   LOG_DEBUG_LN("handle_post_form_request: Received HTTP POST texteck request");
+  
+  // Note: Authorization check removed for HTML form submission
+  // The HTML UI is embedded in firmware and cannot pass Authorization headers
+  
   if (request->method() != HTTP_POST) {
     request->send(405, "text/plain", "Method Not Allowed");
   } else {
@@ -720,7 +778,17 @@ void setup_rest_api()
     },
     NULL,
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-      LOG_INFO_LN("Received REST POST message request");      
+      LOG_INFO_LN("Received REST POST message request");
+      
+      #ifdef ENABLE_AUTHORIZATION
+      // Check authorization on first chunk
+      if (index == 0 && !isAuthorized(request)) {
+        sendUnauthorized(request);
+        postBodyBuffer.erase(request);
+        return;
+      }
+      #endif
+      
       std::string &buf = postBodyBuffer[request];
       if (index == 0) buf.clear();
       buf.append((const char *)data, len);
@@ -751,6 +819,14 @@ void setup_rest_api()
     // GET endpoint: return the current message as JSON
     server.on("/api/v1/message", HTTP_GET, [](AsyncWebServerRequest *request) {
       LOG_INFO_LN("Received REST GET message request");
+      
+      #ifdef ENABLE_AUTHORIZATION
+      if (!isAuthorized(request)) {
+        sendUnauthorized(request);
+        return;
+      }
+      #endif
+      
       String response;
       DynamicJsonDocument doc(512);
       doc["message"] = current_message;
@@ -767,6 +843,16 @@ void setup_rest_api()
       NULL,
       [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         LOG_INFO_LN("Received REST POST color request");
+        
+        #ifdef ENABLE_AUTHORIZATION
+        // Check authorization on first chunk
+        if (index == 0 && !isAuthorized(request)) {
+          sendUnauthorized(request);
+          postBodyBuffer.erase(request);
+          return;
+        }
+        #endif
+        
         std::string &buf = postBodyBuffer[request];
         if (index == 0) buf.clear();
         buf.append((const char *)data, len);
@@ -829,6 +915,14 @@ void setup_rest_api()
     // GET /api/v1/color - return current fg/bg
     server.on("/api/v1/color", HTTP_GET, [](AsyncWebServerRequest *request) {
       LOG_INFO_LN("Received REST GET color request");
+      
+      #ifdef ENABLE_AUTHORIZATION
+      if (!isAuthorized(request)) {
+        sendUnauthorized(request);
+        return;
+      }
+      #endif
+      
       String response;
       DynamicJsonDocument doc(256);
       doc["fg"] = foreground;
