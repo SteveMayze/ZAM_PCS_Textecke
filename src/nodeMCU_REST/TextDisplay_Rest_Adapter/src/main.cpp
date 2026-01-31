@@ -516,13 +516,8 @@ void handle_post_form_request(AsyncWebServerRequest *request)
 {
   LOG_DEBUG_LN("handle_post_form_request: Received HTTP POST texteck request");
   
-  #ifdef ENABLE_AUTHORIZATION
-  // Check authorization before processing
-  if (!isAuthorized(request)) {
-    sendUnauthorized(request);
-    return;
-  }
-  #endif
+  // Note: Authorization check removed for HTML form submission
+  // The HTML UI is embedded in firmware and cannot pass Authorization headers
   
   if (request->method() != HTTP_POST) {
     request->send(405, "text/plain", "Method Not Allowed");
