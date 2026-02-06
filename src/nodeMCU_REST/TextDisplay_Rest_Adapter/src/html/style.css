@@ -9,8 +9,8 @@ input.text_input {
 }
 
 div.marquee {
-    background-color: $MARQUEE_BACKGROUND_TOKEN$;
-    color: $MARQUEE_FOREGROUND_TOKEN$ ;
+    background-color: ~MARQUEE_BACKGROUND_TOKEN~;
+    color: ~MARQUEE_FOREGROUND_TOKEN~ ;
 
     padding-left: 15px;
     padding-right: 15px;

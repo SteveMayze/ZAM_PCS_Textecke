@@ -2,7 +2,11 @@
 #include <Arduino.h>
 #include "secrets.h"
 
-#define TEMPLATE_PLACEHOLDER '$'
+// TEMPLATE_PLACEHOLDER is defined in platformio.ini build_flags as ASCII value 126 (tilde ~)
+// This is just a fallback for IDE intellisense
+#ifndef TEMPLATE_PLACEHOLDER
+#define TEMPLATE_PLACEHOLDER 126  // ASCII code for '~'
+#endif
 
 #if defined(TEXTECKE_ESP32)
   #include <WiFi.h>
@@ -348,6 +352,31 @@ String css_processor(const String &var) {
     return var; // Fehler => leerer String
 }
 
+/**
+ * @brief Escapes template placeholder characters in user input
+ * 
+ * Converts single TEMPLATE_PLACEHOLDER characters to double characters
+ * so they are rendered as literals instead of being processed as template variables.
+ * For example, with TEMPLATE_PLACEHOLDER='~': "Price ~50" becomes "Price ~~50"
+ * which will render as "Price ~50" in the final output.
+ * 
+ * @param input The string potentially containing template placeholder characters
+ * @return String with all placeholder characters doubled (escaped)
+ */
+String escapeTemplateChars(const String& input) {
+  String output;
+  output.reserve(input.length() * 2); // Pre-allocate assuming worst case
+  
+  for (unsigned int i = 0; i < input.length(); i++) {
+    if (input[i] == TEMPLATE_PLACEHOLDER) {
+      output += TEMPLATE_PLACEHOLDER; // Add the character twice
+    }
+    output += input[i];
+  }
+  
+  return output;
+}
+
 String html_processor(const String &var) {
     LOG_DEBUG_F("html_processor var: %s \n", var.c_str());
     if (var == "MESSAGE_TOKEN"){
@@ -359,7 +388,8 @@ String html_processor(const String &var) {
         preview.concat("...");
       }
       LOG_DEBUG_F("html_processor var MESSAGE_TOKEN (len=%u): %s \n", (unsigned)mlen, preview.c_str());
-      return String(current_message);
+      // Escape template placeholder characters so user input like "Price ~50" displays correctly
+      return escapeTemplateChars(String(current_message));
     }
 
     if( var.startsWith("bot")) {
