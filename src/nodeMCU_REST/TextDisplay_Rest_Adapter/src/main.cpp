@@ -208,17 +208,70 @@ void processPendingDatabaseEvents() {
   }
 }
 
-#define SPECIAL_CHAR 8
-uint8_t charmap[SPECIAL_CHAR][2] = {
-    {0xA4, 0xE4}, // ä
-    {0x84, 0xC4}, // Ä X
-    {0xB6, 0xF6}, // ö X
-    {0x96, 0xD6}, // Ö
-    {0xBC, 0xFC}, // ü X
-    {0x9C, 0xDC}, // Ü
-    {0x9F, 0xDF}, // ß
-    {0xA7, 0xA7}, // §
-};
+static size_t utf8_to_latin1(const char *input, char *output, size_t output_size)
+{
+  if (output_size == 0)
+  {
+    return 0;
+  }
+
+  size_t in_idx = 0;
+  size_t out_idx = 0;
+
+  while (input[in_idx] != '\0' && out_idx < (output_size - 1))
+  {
+    uint8_t b0 = (uint8_t)input[in_idx];
+
+    if (b0 < 0x80)
+    {
+      output[out_idx++] = (char)b0;
+      in_idx++;
+      continue;
+    }
+
+    if ((b0 == 0xC2 || b0 == 0xC3) && input[in_idx + 1] != '\0')
+    {
+      uint8_t b1 = (uint8_t)input[in_idx + 1];
+      if ((b1 & 0xC0) == 0x80)
+      {
+        if (b0 == 0xC2)
+        {
+          output[out_idx++] = (char)b1;
+        }
+        else
+        {
+          output[out_idx++] = (char)(b1 + 0x40);
+        }
+        in_idx += 2;
+        continue;
+      }
+    }
+
+    if ((b0 & 0xE0) == 0xC0 && input[in_idx + 1] != '\0' && (((uint8_t)input[in_idx + 1] & 0xC0) == 0x80))
+    {
+      in_idx += 2;
+    }
+    else if ((b0 & 0xF0) == 0xE0 && input[in_idx + 1] != '\0' && input[in_idx + 2] != '\0' &&
+             (((uint8_t)input[in_idx + 1] & 0xC0) == 0x80) && (((uint8_t)input[in_idx + 2] & 0xC0) == 0x80))
+    {
+      in_idx += 3;
+    }
+    else if ((b0 & 0xF8) == 0xF0 && input[in_idx + 1] != '\0' && input[in_idx + 2] != '\0' && input[in_idx + 3] != '\0' &&
+             (((uint8_t)input[in_idx + 1] & 0xC0) == 0x80) && (((uint8_t)input[in_idx + 2] & 0xC0) == 0x80) && (((uint8_t)input[in_idx + 3] & 0xC0) == 0x80))
+    {
+      in_idx += 4;
+    }
+    else
+    {
+      in_idx++;
+    }
+
+    output[out_idx++] = '?';
+  }
+
+  output[out_idx] = '\0';
+  return out_idx;
+}
 
 
 uint8_t calc_checksum(uint8_t message[], uint8_t length)
@@ -438,7 +491,9 @@ void render_and_send(const char* action, const char *param) {
         _param[plen+1] = '\0';
         plen++;
       }
-      const char *safe_param = _param;
+      char latin1_param[MESSAGE_BUFFER_SIZE];
+      utf8_to_latin1(_param, latin1_param, sizeof(latin1_param));
+      const char *safe_param = latin1_param;
       frame_length = 1; // The length of the message + the action, one byte.
       message_frame[frame_idx++] = frame_length;
       message_frame[frame_idx++] = ACTION_MESSAGE;
@@ -458,33 +513,10 @@ void render_and_send(const char* action, const char *param) {
         hexbuf[off < sizeof(hexbuf) ? off : sizeof(hexbuf)-1] = '\0';
         LOG_DEBUG_F("render_and_send: Preparing the message action, param-length: %d, data-preview: %s\n", (int)strlen(param), hexbuf);
       }
-      bool escape_mode = false;
       for (size_t i = 0; i < safe_plen; i++)
       {
-        if (escape_mode)
-        {
-          uint8_t subst = 0x20;
-          for (uint8_t j = 0; j < SPECIAL_CHAR; j++)
-          {
-            if (charmap[j][0] == (unsigned char)safe_param[i])
-            {
-              subst = charmap[j][1];
-              break;
-            }
-          }
-          if (frame_idx < sizeof(message_frame) - 1) { message_frame[frame_idx++] = subst; frame_length++; }
-          else { break; }
-          escape_mode = false;
-        }
-        else if ((unsigned char)safe_param[i] == 0xC3 || (unsigned char)safe_param[i] == 0xC2)
-        {
-          escape_mode = true;
-        }
-        else
-        {
-          if (frame_idx < sizeof(message_frame) - 1) { message_frame[frame_idx++] = (unsigned char)safe_param[i]; frame_length++; }
-          else { break; }
-        }
+        if (frame_idx < sizeof(message_frame) - 1) { message_frame[frame_idx++] = (unsigned char)safe_param[i]; frame_length++; }
+        else { break; }
       }
       // finished processing bytes
       message_frame[0x01] = frame_length;
