@@ -11,10 +11,12 @@
 #if defined(TEXTECKE_ESP32)
   #include <WiFi.h>
   #include <AsyncTCP.h>
+  #include <ESPmDNS.h>
   HardwareSerial TextDisplaySerial(2); // UART1 on ESP32
 #elif defined(TEXTECKE_ESP8266)
   #include <ESP8266WiFi.h>
   #include <ESPAsyncTCP.h>
+  #include <ESP8266mDNS.h>
   HardwareSerial TextDisplaySerial = Serial1; // UART0 on ESP32
 #else
   #error "Please define either TEXTECKE_ESP32 or TEXTECKE_ESP8266"
@@ -784,6 +786,16 @@ void setup_wifi_and_network()
   WiFi.mode(WIFI_AP_STA); // or any other mode
   WiFi.setHostname(HOST_NAME);
   WiFi.mode(WIFI_STA);
+  
+  // Enable automatic reconnection and persistent WiFi credentials
+  // Must be set AFTER hostname configuration and BEFORE WiFi.begin()
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
+  
+  // Disable WiFi sleep mode to prevent connection drops
+  // This increases power consumption slightly but ensures stable connectivity
+  WiFi.setSleep(false);
+  
   WiFi.begin(ssid, password);
   // check wi-fi is connected to wi-fi network
   while (WiFi.status() != WL_CONNECTED)
@@ -796,6 +808,57 @@ void setup_wifi_and_network()
   LOG_INFO_F("This hostname: %s\n", WiFi.getHostname());
   LOG_INFO("Got IP: ");
   LOG_INFO_LN(WiFi.localIP());
+  
+  // Start mDNS service for hostname resolution on local network
+  if (!MDNS.begin(HOST_NAME)) {
+    LOG_ERROR_LN("Error starting mDNS");
+  } else {
+    LOG_INFO_F("mDNS responder started: %s.local\n", HOST_NAME);
+    // Advertise HTTP service
+    MDNS.addService("http", "tcp", 80);
+  }
+}
+
+/**
+ * @brief Monitor and restore WiFi connection if lost
+ * 
+ * Checks WiFi status and attempts reconnection if disconnected.
+ * If reconnection fails after 10 seconds, triggers ESP restart.
+ * Should be called periodically from loop().
+ */
+void checkWiFiConnection() {
+  if (WiFi.status() != WL_CONNECTED) {
+    LOG_INFO_LN("WiFi connection lost. Attempting to reconnect...");
+    
+    // Disconnect and reconnect
+    WiFi.disconnect();
+    delay(100);
+    WiFi.begin(ssid, password);
+    
+    // Wait up to 10 seconds for reconnection
+    unsigned long startAttempt = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 10000) {
+      delay(500);
+      LOG_DEBUG_S(".");
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+      LOG_INFO_LN("");
+      LOG_INFO_LN("WiFi reconnected successfully!");
+      LOG_INFO_F("IP: %s\n", WiFi.localIP().toString().c_str());
+      
+      // Restart mDNS after reconnection
+      MDNS.end();
+      if (MDNS.begin(HOST_NAME)) {
+        LOG_INFO_LN("mDNS restarted after reconnection");
+        MDNS.addService("http", "tcp", 80);
+      }
+    } else {
+      LOG_ERROR_LN("WiFi reconnection failed. Restarting ESP...");
+      delay(1000);
+      ESP.restart();
+    }
+  }
 }
 
 void setup_rest_api()
@@ -1007,8 +1070,24 @@ void setup()
 
 void loop()
 {
+  // Check WiFi connection every 30 seconds
+  static unsigned long lastWiFiCheck = 0;
+  unsigned long currentMillis = millis();
+  
+  if (currentMillis - lastWiFiCheck >= 30000) {
+    checkWiFiConnection();
+    lastWiFiCheck = currentMillis;
+  }
+  
   // Process any pending database events without blocking
   processPendingDatabaseEvents();
+  
+  // Handle mDNS
+  #if defined(TEXTECKE_ESP32)
+    // ESP32 mDNS runs in background, no need to call MDNS.update()
+  #elif defined(TEXTECKE_ESP8266)
+    MDNS.update(); // ESP8266 requires periodic update
+  #endif
   
   // Yield to other tasks and prevent watchdog timeout
   delay(10);
